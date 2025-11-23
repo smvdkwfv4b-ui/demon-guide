@@ -6,131 +6,328 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Демон-Гайд">
-    <meta name="theme-color" content="#8b0000">
+    <meta name="theme-color" content="#8b4049">
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./icon-192.png">
     <title>Демон-Гайд 😈</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; }
-        body { font-family: 'Courier New', monospace; background: linear-gradient(135deg, #1a0a0a, #2d1b1b); color: #e0d5c7; }
+        body { 
+            font-family: 'Courier New', monospace; 
+            background: linear-gradient(135deg, #1a1618, #2a2225); 
+            color: #d4c5ba; 
+        }
         
         .app { display: flex; flex-direction: column; height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
         
-        .header { background: rgba(20,10,10,0.95); padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top)); border-bottom: 2px solid #8b0000; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .avatar { font-size: 40px; }
-        .user-name { font-size: 18px; color: #ff6666; font-weight: bold; }
-        .user-level { font-size: 11px; color: #999; }
-        .blood { background: rgba(139,0,0,0.3); padding: 8px 16px; border-radius: 20px; border: 2px solid #8b0000; font-weight: bold; }
+        .header { 
+            background: rgba(20,16,18,0.95); 
+            padding: 12px 15px; 
+            padding-top: calc(12px + env(safe-area-inset-top)); 
+            border-bottom: 2px solid #8b4049; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-shrink: 0; 
+        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .avatar { font-size: 32px; }
+        .user-name { font-size: 15px; color: #d4957d; font-weight: bold; }
+        .user-level { font-size: 10px; color: #888; }
+        .header-stats { display: flex; gap: 8px; }
+        .stat-pill { 
+            background: rgba(139,64,73,0.3); 
+            padding: 6px 12px; 
+            border-radius: 15px; 
+            border: 1px solid #8b4049; 
+            font-size: 11px;
+            font-weight: bold; 
+        }
         
         .content { flex: 1; overflow: hidden; position: relative; min-height: 0; }
-        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; padding-bottom: 100px; }
+        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; padding-bottom: 80px; }
         .screen.active { display: block; }
         
-        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,10,10,0.98); border-top: 2px solid #8b0000; padding: 10px 5px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); display: flex; justify-content: space-around; z-index: 1000; }
-        .nav-btn { background: none; border: none; color: #999; cursor: pointer; padding: 8px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 55px; transition: all 0.3s; }
-        .nav-btn.active { background: rgba(139,0,0,0.3); color: #ff6666; }
-        .nav-icon { font-size: 22px; }
-        .nav-label { font-size: 9px; font-weight: bold; }
+        .nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(20,16,18,0.98); 
+            border-top: 2px solid #8b4049; 
+            padding: 8px 5px; 
+            padding-bottom: calc(8px + env(safe-area-inset-bottom)); 
+            display: flex; 
+            justify-content: space-around; 
+            z-index: 1000; 
+        }
+        .nav-btn { 
+            background: none; 
+            border: none; 
+            color: #888; 
+            cursor: pointer; 
+            padding: 6px; 
+            border-radius: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 3px; 
+            min-width: 50px; 
+            transition: all 0.3s; 
+        }
+        .nav-btn.active { background: rgba(139,64,73,0.3); color: #d4957d; }
+        .nav-icon { font-size: 20px; }
+        .nav-label { font-size: 8px; font-weight: bold; }
         
-        .demon-msg { background: linear-gradient(135deg, rgba(139,0,0,0.3), rgba(220,20,60,0.2)); border: 2px solid #8b0000; border-radius: 15px; padding: 20px; margin-bottom: 20px; position: relative; }
-        .demon-msg::before { content: '😈'; position: absolute; top: -20px; left: 20px; font-size: 40px; background: #1a0a0a; padding: 5px 10px; border-radius: 50%; }
-        .demon-msg p { margin-top: 15px; line-height: 1.6; font-size: 14px; }
-        .demon-msg strong { color: #ff6666; }
+        .dashboard-grid { display: grid; gap: 10px; margin-bottom: 12px; }
+        .dash-card { 
+            background: rgba(40,32,35,0.8); 
+            border: 2px solid #8b4049; 
+            border-radius: 12px; 
+            padding: 12px; 
+        }
+        .dash-title { font-size: 12px; color: #d4957d; font-weight: bold; margin-bottom: 8px; }
+        .dash-content { font-size: 13px; }
         
-        .section { font-size: 16px; font-weight: bold; color: #ff6666; margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #8b0000; }
+        .xp-bar { 
+            width: 100%; 
+            height: 8px; 
+            background: rgba(0,0,0,0.5); 
+            border-radius: 10px; 
+            overflow: hidden; 
+            margin: 6px 0; 
+        }
+        .xp-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #8b4049, #a0525c); 
+            transition: width 0.5s; 
+            border-radius: 10px; 
+        }
         
-        .card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
-        .card-title { font-size: 15px; font-weight: bold; color: #ff6666; margin-bottom: 6px; }
-        .card-desc { font-size: 13px; color: #ccc; margin-bottom: 6px; }
-        .card-hint { font-size: 11px; color: #999; font-style: italic; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 6px; border-left: 3px solid #8b0000; margin-bottom: 6px; }
-        .card-reward { font-size: 12px; color: #ff9966; font-weight: bold; }
+        .section { 
+            font-size: 13px; 
+            font-weight: bold; 
+            color: #d4957d; 
+            margin: 12px 0 8px; 
+            padding-bottom: 5px; 
+            border-bottom: 2px solid #8b4049; 
+        }
         
-        .checkbox { width: 22px; height: 22px; border: 2px solid #8b0000; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; flex-shrink: 0; }
-        .checkbox.done { background: #2d7a2d; border-color: #4caf50; }
-        .checkbox.done::after { content: '✓'; color: white; font-weight: bold; font-size: 14px; }
+        .card { 
+            background: rgba(40,32,35,0.8); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+        }
+        .card-title { font-size: 13px; font-weight: bold; color: #d4957d; margin-bottom: 4px; }
+        .card-desc { font-size: 11px; color: #aaa; margin-bottom: 4px; }
+        .card-hint { font-size: 10px; color: #888; font-style: italic; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px; border-left: 2px solid #8b4049; margin-bottom: 4px; }
+        .card-reward { font-size: 11px; color: #d4957d; font-weight: bold; }
         
-        .btn { width: 100%; background: linear-gradient(135deg, #8b0000, #dc143c); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin: 8px 0; font-family: 'Courier New', monospace; }
-        .btn:active { transform: scale(0.98); }
-        .btn-small { padding: 10px; font-size: 13px; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
-        .modal.show { display: flex; }
-        .modal-box { background: linear-gradient(135deg, #2d1b1b, #1a0a0a); border: 2px solid #8b0000; border-radius: 15px; padding: 20px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; margin: auto; }
-        .modal-box h3 { color: #ff6666; margin-bottom: 15px; text-align: center; font-size: 18px; }
-        .modal-box label { display: block; color: #ff9966; margin: 12px 0 5px; font-size: 13px; font-weight: bold; }
-        .modal-box input, .modal-box textarea, .modal-box select { width: 100%; background: rgba(40,20,20,0.6); border: 2px solid #8b0000; border-radius: 8px; padding: 10px; color: #e0d5c7; font-family: 'Courier New', monospace; font-size: 14px; }
-        .modal-box textarea { resize: vertical; min-height: 60px; }
-        .modal-close { background: #666; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; }
-        
-        .distribute-row { background: rgba(40,20,20,0.6); border: 2px solid #8b0000; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .distribute-name { color: #ff9966; font-size: 13px; font-weight: bold; }
-        .distribute-input { width: 100px; text-align: right; }
-        
-        .finance-big { background: linear-gradient(135deg, rgba(40,20,20,0.8), rgba(50,25,25,0.8)); border: 2px solid #8b0000; border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center; }
-        .finance-label { font-size: 12px; color: #999; text-transform: uppercase; margin-bottom: 8px; }
-        .finance-amount { font-size: 36px; font-weight: bold; color: #66ff66; }
-        
-        .piggy { background: rgba(40,20,20,0.6); border: 2px solid #8b0000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-        .piggy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .piggy-name { font-size: 13px; font-weight: bold; color: #ff9966; }
-        .piggy-amount { font-size: 13px; color: #66ff66; font-weight: bold; }
-        .progress { width: 100%; height: 6px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; margin-top: 6px; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #8b0000, #dc143c); transition: width 0.5s; border-radius: 10px; }
-        
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .stat { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 12px; padding: 12px; text-align: center; }
-        .stat-label { font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 6px; }
-        .stat-value { font-size: 28px; font-weight: bold; color: #ff6666; }
-        
-        .quest-row { display: flex; align-items: start; gap: 10px; }
+        .quest-row { display: flex; align-items: start; gap: 8px; }
         .quest-info { flex: 1; }
+        .checkbox { 
+            width: 20px; 
+            height: 20px; 
+            border: 2px solid #8b4049; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.3s; 
+            flex-shrink: 0; 
+        }
+        .checkbox.done { background: #5a7a5a; border-color: #6a9a6a; }
+        .checkbox.done::after { content: '✓'; color: white; font-weight: bold; font-size: 12px; }
         
-        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
-        .cal-day { aspect-ratio: 1; background: rgba(40,20,20,0.6); border: 1px solid #8b0000; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; position: relative; padding: 4px 2px; }
-        .cal-day.today { border: 2px solid #ff6666; }
-        .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,0,0,0.5), rgba(220,20,60,0.3)); }
-        .cal-day-num { font-weight: bold; }
-        .cal-client-name { font-size: 8px; color: #ff9966; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .cal-client-price { font-size: 8px; color: #66ff66; font-weight: bold; }
-        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 10px; color: #999; font-weight: bold; }
+        .streak { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 3px; 
+            background: rgba(255,140,0,0.2); 
+            padding: 2px 6px; 
+            border-radius: 8px; 
+            font-size: 10px; 
+            color: #ff8c00; 
+            border: 1px solid #ff8c00; 
+        }
         
-        .booking-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-        .booking-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
-        .booking-name { font-size: 15px; font-weight: bold; color: #ff6666; }
-        .booking-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: bold; }
-        .badge-new { background: rgba(76,175,80,0.3); color: #4caf50; border: 1px solid #4caf50; }
-        .badge-return { background: rgba(33,150,243,0.3); color: #2196f3; border: 1px solid #2196f3; }
-        .badge-warsaw { background: rgba(76,175,80,0.3); color: #4caf50; border: 1px solid #4caf50; }
-        .badge-sochaczew { background: rgba(255,152,0,0.3); color: #ff9800; border: 1px solid #ff9800; }
-        .booking-info { font-size: 12px; color: #ccc; margin: 4px 0; }
-        .booking-actions { display: flex; gap: 6px; margin-top: 8px; }
-        .btn-complete { background: linear-gradient(135deg, #2d7a2d, #4caf50); }
-        .btn-delete { background: #dc3545; padding: 8px 12px; }
+        .btn { 
+            width: 100%; 
+            background: linear-gradient(135deg, #8b4049, #a0525c); 
+            color: white; 
+            border: none; 
+            padding: 10px; 
+            border-radius: 10px; 
+            font-size: 13px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin: 5px 0; 
+            font-family: 'Courier New', monospace; 
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-small { padding: 7px; font-size: 11px; }
+        .btn-secondary { background: #666; }
         
-        .reward-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .reward-icon { font-size: 32px; }
-        .reward-info { flex: 1; margin: 0 12px; }
-        .reward-name { font-size: 14px; font-weight: bold; color: #ff9966; margin-bottom: 4px; }
-        .reward-price { font-size: 18px; font-weight: bold; color: #66ff66; }
-        .reward-status { font-size: 11px; color: #999; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.95); 
+            z-index: 2000; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 15px; 
+            overflow-y: auto; 
+        }
+        .modal.show { display: flex; }
+        .modal-box { 
+            background: linear-gradient(135deg, #2a2225, #1a1618); 
+            border: 2px solid #8b4049; 
+            border-radius: 12px; 
+            padding: 15px; 
+            max-width: 500px; 
+            width: 100%; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+            margin: auto; 
+        }
+        .modal-box h3 { color: #d4957d; margin-bottom: 12px; text-align: center; font-size: 16px; }
+        .modal-box label { display: block; color: #d4957d; margin: 10px 0 4px; font-size: 12px; font-weight: bold; }
+        .modal-box input, .modal-box textarea, .modal-box select { 
+            width: 100%; 
+            background: rgba(40,32,35,0.6); 
+            border: 2px solid #8b4049; 
+            border-radius: 8px; 
+            padding: 8px; 
+            color: #d4c5ba; 
+            font-family: 'Courier New', monospace; 
+            font-size: 13px; 
+        }
+        .modal-box textarea { resize: vertical; min-height: 50px; }
+        .modal-close { background: #555; }
         
-        .transaction-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .transaction-card.income { border-color: #4caf50; }
-        .transaction-card.expense { border-color: #dc3545; }
-        .transaction-left { flex: 1; }
-        .transaction-type { font-size: 11px; color: #999; text-transform: uppercase; }
-        .transaction-desc { font-size: 13px; color: #e0d5c7; margin: 4px 0; }
-        .transaction-date { font-size: 10px; color: #666; }
-        .transaction-amount { font-size: 18px; font-weight: bold; }
-        .transaction-amount.positive { color: #66ff66; }
-        .transaction-amount.negative { color: #ff6666; }
+        .sos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .sos-btn { 
+            background: rgba(139,64,73,0.3); 
+            border: 2px solid #8b4049; 
+            padding: 15px 10px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            text-align: center; 
+            transition: all 0.3s; 
+        }
+        .sos-btn:active { transform: scale(0.95); background: rgba(139,64,73,0.5); }
+        .sos-icon { font-size: 28px; margin-bottom: 5px; }
+        .sos-title { font-size: 11px; font-weight: bold; color: #d4957d; }
+        .sos-time { font-size: 9px; color: #888; }
         
-        .btn-row { display: flex; gap: 8px; }
+        .achievement { 
+            background: rgba(40,32,35,0.8); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .achievement.locked { opacity: 0.4; }
+        .achievement-icon { font-size: 32px; }
+        .achievement-info { flex: 1; }
+        .achievement-name { font-size: 12px; font-weight: bold; color: #d4957d; }
+        .achievement-desc { font-size: 10px; color: #888; }
+        
+        .progress-box { 
+            background: rgba(40,32,35,0.6); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+        }
+        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .progress-name { font-size: 12px; font-weight: bold; color: #d4957d; }
+        .progress-amount { font-size: 12px; color: #9ac99a; font-weight: bold; }
+        .progress-bar { 
+            width: 100%; 
+            height: 6px; 
+            background: rgba(0,0,0,0.5); 
+            border-radius: 10px; 
+            overflow: hidden; 
+        }
+        .progress-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #8b4049, #a0525c); 
+            transition: width 0.5s; 
+            border-radius: 10px; 
+        }
+        
+        .sleep-entry { 
+            background: rgba(40,32,35,0.8); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+        }
+        .sleep-date { font-size: 12px; font-weight: bold; color: #d4957d; margin-bottom: 4px; }
+        .sleep-info { font-size: 11px; color: #aaa; }
+        .sleep-quality { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 10px; }
+        .quality-good { background: rgba(154,201,154,0.3); color: #9ac99a; }
+        .quality-ok { background: rgba(255,165,0,0.3); color: #ffa500; }
+        .quality-bad { background: rgba(200,80,80,0.3); color: #c85050; }
+        
+        .forecast-box { 
+            background: rgba(139,64,73,0.2); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+        }
+        .forecast-title { font-size: 13px; font-weight: bold; color: #d4957d; margin-bottom: 8px; }
+        .forecast-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 5px 0; 
+            font-size: 11px; 
+            border-bottom: 1px solid rgba(139,64,73,0.3); 
+        }
+        .forecast-item:last-child { border-bottom: none; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .stat { 
+            background: rgba(40,32,35,0.8); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            text-align: center; 
+        }
+        .stat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-value { font-size: 22px; font-weight: bold; color: #d4957d; }
+        
+        .insight-box { 
+            background: rgba(139,64,73,0.2); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+        }
+        .insight-icon { font-size: 24px; margin-bottom: 5px; }
+        .insight-text { font-size: 12px; line-height: 1.5; }
+        
+        .slider-container { margin: 8px 0; }
+        .slider-label { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 11px; 
+            margin-bottom: 4px; 
+        }
+        .slider { width: 100%; }
+        
+        .btn-row { display: flex; gap: 6px; }
         .btn-row .btn { margin: 0; }
-        .btn-edit { background: #ff9800; padding: 6px 10px; font-size: 11px; border-radius: 6px; border: none; color: white; cursor: pointer; }
-        .btn-edit:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -143,15 +340,65 @@
                     <div class="user-level">Уровень <span id="level">5</span></div>
                 </div>
             </div>
-            <div class="blood">🩸 <span id="blood">0</span></div>
+            <div class="header-stats">
+                <div class="stat-pill">⚡ <span id="xp">0</span></div>
+                <div class="stat-pill">🩸 <span id="blood">0</span></div>
+            </div>
         </div>
         
         <div class="content">
-            <div class="screen active" id="screen-quests">
-                <div class="demon-msg">
-                    <p><strong>Слушай сюда, творец кожных кошмаров!</strong></p>
-                    <p>Выполняй задания и зарабатывай кровавые очки. Может быть выползешь из Сохачева в Варшаву.</p>
+            <!-- ГЛАВНАЯ -->
+            <div class="screen active" id="screen-home">
+                <div class="dashboard-grid">
+                    <div class="dash-card">
+                        <div class="dash-title">⚡ Прогресс</div>
+                        <div class="dash-content">
+                            <div style="font-size:11px; color:#888; margin-bottom:4px;">До уровня <span id="nextLevel">6</span></div>
+                            <div class="xp-bar">
+                                <div class="xp-fill" id="xpBar" style="width:0%"></div>
+                            </div>
+                            <div style="font-size:10px; color:#888;"><span id="xpCurrent">0</span> / <span id="xpNeeded">100</span> XP</div>
+                        </div>
+                    </div>
                 </div>
+                
+                <div class="section">🎯 Квесты на Сегодня</div>
+                <div id="todayQuests"></div>
+                
+                <div class="section">💰 Финансы</div>
+                <div class="dash-card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <div>
+                            <div style="font-size:10px; color:#888;">Баланс</div>
+                            <div style="font-size:20px; font-weight:bold; color:#9ac99a;"><span id="homeBalance">0</span> zł</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px; color:#888;">До подушки</div>
+                            <div style="font-size:16px; font-weight:bold; color:#d4957d;"><span id="homeToGoal">5000</span> zł</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="homeCushionProgress" style="width:0%"></div>
+                    </div>
+                </div>
+                
+                <div class="section">📅 Записи</div>
+                <div id="homeBookings"></div>
+                
+                <div class="section">😰 Тревога</div>
+                <div class="dash-card" onclick="switchTab('anxiety')">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:11px; color:#888;">Сегодня</div>
+                            <div style="font-size:18px; font-weight:bold;" id="homeAnxiety">-/10</div>
+                        </div>
+                        <div style="font-size:11px; color:#d4957d; cursor:pointer;">→ SOS Помощь</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- КВЕСТЫ -->
+            <div class="screen" id="screen-quests">
                 <div class="section">⏰ Каждые 4 часа</div>
                 <div id="quests-4h"></div>
                 <div class="section">📅 Ежедневные</div>
@@ -160,154 +407,208 @@
                 <div id="quests-weekly"></div>
             </div>
             
+            <!-- ТРЕВОГА SOS -->
+            <div class="screen" id="screen-anxiety">
+                <div class="section">🚨 Быстрая Помощь</div>
+                <div class="sos-grid">
+                    <div class="sos-btn" onclick="startSOS('breathing')">
+                        <div class="sos-icon">🌬️</div>
+                        <div class="sos-title">Дыхание 4-7-8</div>
+                        <div class="sos-time">1 минута</div>
+                    </div>
+                    <div class="sos-btn" onclick="startSOS('grounding')">
+                        <div class="sos-icon">🧊</div>
+                        <div class="sos-title">Заземление</div>
+                        <div class="sos-time">2 минуты</div>
+                    </div>
+                    <div class="sos-btn" onclick="startSOS('thoughts')">
+                        <div class="sos-icon">💭</div>
+                        <div class="sos-title">Ловушка Мыслей</div>
+                        <div class="sos-time">3 минуты</div>
+                    </div>
+                    <div class="sos-btn" onclick="showAnxietyLog()">
+                        <div class="sos-icon">📝</div>
+                        <div class="sos-title">Журнал</div>
+                        <div class="sos-time">Триггеры</div>
+                    </div>
+                </div>
+                
+                <div class="section">📊 История Тревоги</div>
+                <div id="anxietyHistory"></div>
+            </div>
+            
+            <!-- ФИНАНСЫ -->
             <div class="screen" id="screen-finance">
-                <div class="demon-msg">
-                    <p><strong>Твои жалкие финансы!</strong></p>
-                    <p>Давай посмотрим сколько ты должен и когда накопишь подушку.</p>
+                <div class="dash-card" style="text-align:center; margin-bottom:12px;">
+                    <div style="font-size:11px; color:#888;">Баланс</div>
+                    <div style="font-size:28px; font-weight:bold; color:#9ac99a; margin:5px 0;"><span id="balance">0</span> zł</div>
+                    <div class="btn-row">
+                        <button class="btn" onclick="showAddIncome()">💰 Доход</button>
+                        <button class="btn" onclick="showAddExpense()">💸 Расход</button>
+                    </div>
                 </div>
-                <div class="finance-big">
-                    <div class="finance-label">💰 Баланс</div>
-                    <div class="finance-amount"><span id="balance">0</span> zł</div>
-                </div>
-                <div class="btn-row">
-                    <button class="btn" onclick="showAddIncome()">💰 Доход</button>
-                    <button class="btn" onclick="showAddExpense()">💸 Расход</button>
-                </div>
+                
+                <div class="section">🎯 Прогноз</div>
+                <div id="forecastBox"></div>
+                
                 <div class="section">🏺 Копилки</div>
                 <div id="piggyBanks"></div>
-                <div class="section">📊 История Транзакций</div>
+                
+                <div class="section">📊 Транзакции</div>
                 <div id="transactionList"></div>
             </div>
             
-            <div class="screen" id="screen-calendar">
-                <div class="demon-msg">
-                    <p><strong>Твоя книга записей!</strong></p>
-                    <p>Отслеживай клиентов и смотри статистику Варшава vs Сохачев.</p>
-                </div>
-                <div class="stat-grid">
-                    <div class="stat"><div class="stat-label">Всего</div><div class="stat-value"><span id="stat-total">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Варшава</div><div class="stat-value"><span id="stat-warsaw">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Сохачев</div><div class="stat-value"><span id="stat-sochaczew">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Новых</div><div class="stat-value"><span id="stat-new">0</span></div></div>
-                </div>
-                <button class="btn" onclick="showAddBooking()">➕ Добавить Запись</button>
-                <div class="section">📅 Календарь</div>
-                <div class="cal-header">
-                    <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-                </div>
-                <div class="calendar" id="calendar"></div>
-                <div class="section">📋 Предстоящие</div>
-                <div id="upcomingBookings"></div>
-                <div class="section">✅ Завершённые</div>
-                <div id="completedBookings"></div>
+            <!-- СОН -->
+            <div class="screen" id="screen-sleep">
+                <button class="btn" onclick="showSleepLog()">📝 Записать Сон</button>
+                
+                <div class="section">📊 Корреляции</div>
+                <div id="sleepInsights"></div>
+                
+                <div class="section">🌙 История</div>
+                <div id="sleepHistory"></div>
             </div>
             
-            <div class="screen" id="screen-diary">
-                <div class="demon-msg">
-                    <p><strong>Время исповеди, грешник!</strong></p>
-                    <p>Расскажи как прошел день. Я буду анализировать паттерны твоей жалкой жизни.</p>
-                </div>
-                <button class="btn" onclick="showDiary()">📝 Заполнить Дневник</button>
-                <div class="section">📖 Последние Записи</div>
-                <div id="diaryHistory"></div>
+            <!-- ДОСТИЖЕНИЯ -->
+            <div class="screen" id="screen-achievements">
+                <div class="section">🏆 Финансовые</div>
+                <div id="achievementsFinance"></div>
+                <div class="section">🎨 Профессиональные</div>
+                <div id="achievementsPro"></div>
+                <div class="section">😴 Здоровье</div>
+                <div id="achievementsHealth"></div>
             </div>
             
-            <div class="screen" id="screen-rewards">
-                <div class="demon-msg">
-                    <p><strong>Твой список желаний!</strong></p>
-                    <p>Я буду подсчитывать когда ты сможешь себе это позволить. Спойлер: нескоро.</p>
-                </div>
-                <button class="btn" onclick="showAddReward()">🎁 Добавить Награду</button>
-                <div class="section">🎁 Мои Награды</div>
-                <div id="rewardsList"></div>
-            </div>
-            
+            <!-- СТАТИСТИКА -->
             <div class="screen" id="screen-stats">
-                <div class="demon-msg">
-                    <p><strong>Статистика твоих страданий!</strong></p>
-                    <p>Цифры не врут, в отличие от тебя.</p>
-                </div>
                 <div class="stat-grid">
-                    <div class="stat"><div class="stat-label">Уровень</div><div class="stat-value"><span id="stat-level">5</span></div></div>
-                    <div class="stat"><div class="stat-label">Кровь</div><div class="stat-value"><span id="stat-blood">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Заданий</div><div class="stat-value"><span id="stat-quests">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Деньги</div><div class="stat-value"><span id="stat-money">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Уровень</div><div class="stat-value"><span id="statLevel">5</span></div></div>
+                    <div class="stat"><div class="stat-label">Кровь</div><div class="stat-value"><span id="statBlood">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Квесты</div><div class="stat-value"><span id="statQuests">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Работ</div><div class="stat-value"><span id="statWork">0</span></div></div>
                 </div>
-                <div class="section">🎯 Прогресс к Целям</div>
-                <div id="statsGoals"></div>
+                
                 <button class="btn" onclick="exportReport()">📊 Экспорт для Клода</button>
+                
+                <div class="section">📈 Прогресс</div>
+                <div id="statsProgress"></div>
             </div>
         </div>
         
         <div class="nav">
-            <button class="nav-btn active" onclick="switchTab('quests')">
-                <div class="nav-icon">⚔️</div><div class="nav-label">Задания</div>
+            <button class="nav-btn active" onclick="switchTab('home')">
+                <div class="nav-icon">🏠</div><div class="nav-label">Главная</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('quests')">
+                <div class="nav-icon">⚔️</div><div class="nav-label">Квесты</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('anxiety')">
+                <div class="nav-icon">😰</div><div class="nav-label">Тревога</div>
             </button>
             <button class="nav-btn" onclick="switchTab('finance')">
                 <div class="nav-icon">💰</div><div class="nav-label">Финансы</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('calendar')">
-                <div class="nav-icon">📅</div><div class="nav-label">Записи</div>
+            <button class="nav-btn" onclick="switchTab('sleep')">
+                <div class="nav-icon">😴</div><div class="nav-label">Сон</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('diary')">
-                <div class="nav-icon">📔</div><div class="nav-label">Дневник</div>
-            </button>
-            <button class="nav-btn" onclick="switchTab('rewards')">
-                <div class="nav-icon">🎁</div><div class="nav-label">Награды</div>
-            </button>
-            <button class="nav-btn" onclick="switchTab('stats')">
-                <div class="nav-icon">📊</div><div class="nav-label">Статы</div>
+            <button class="nav-btn" onclick="switchTab('achievements')">
+                <div class="nav-icon">🏆</div><div class="nav-label">Награды</div>
             </button>
         </div>
     </div>
     
-    <div class="modal" id="diaryModal">
+    <!-- MODALS -->
+    <div class="modal" id="sleepModal">
         <div class="modal-box">
-            <h3>📔 Дневник за Сегодня</h3>
-            <label>Настроение (1-10): <span id="moodVal">5</span></label>
-            <input type="range" id="mood" min="1" max="10" value="5" oninput="document.getElementById('moodVal').textContent=this.value">
-            <label>Энергия (1-10): <span id="energyVal">5</span></label>
-            <input type="range" id="energy" min="1" max="10" value="5" oninput="document.getElementById('energyVal').textContent=this.value">
-            <label>Тревога (1-10): <span id="anxietyVal">5</span></label>
-            <input type="range" id="anxiety" min="1" max="10" value="5" oninput="document.getElementById('anxietyVal').textContent=this.value">
-            <label>Шаги:</label>
-            <input type="number" id="steps" placeholder="8500">
-            <label>Что сделал сегодня:</label>
-            <textarea id="achievements" rows="3" placeholder="Татуировка, контент..."></textarea>
-            <label>Что было сложно:</label>
-            <textarea id="struggles" rows="3" placeholder="Тревога, усталость..."></textarea>
-            <button class="btn" onclick="saveDiary()">💾 Сохранить (+20 🩸)</button>
-            <button class="modal-close" onclick="closeModal('diaryModal')">Закрыть</button>
+            <h3>😴 Журнал Сна</h3>
+            <label>Лёг спать:</label>
+            <input type="time" id="sleepBedTime" value="23:00">
+            <label>Проснулся:</label>
+            <input type="time" id="sleepWakeTime" value="07:00">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Качество сна:</span>
+                    <span id="sleepQualityVal">5</span>
+                </div>
+                <input type="range" class="slider" id="sleepQuality" min="1" max="10" value="5" oninput="document.getElementById('sleepQualityVal').textContent=this.value">
+            </div>
+            <label>Просыпался ночью (раз):</label>
+            <input type="number" id="sleepWakeups" value="0" min="0">
+            <label>Что мешало:</label>
+            <textarea id="sleepIssues" rows="2" placeholder="Тревога, шум..."></textarea>
+            <button class="btn" onclick="saveSleep()">💾 Сохранить (+15 🩸)</button>
+            <button class="btn modal-close" onclick="closeModal('sleepModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="anxietyModal">
+        <div class="modal-box">
+            <h3>📝 Журнал Тревоги</h3>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Уровень ДО:</span>
+                    <span id="anxietyBeforeVal">7</span>
+                </div>
+                <input type="range" class="slider" id="anxietyBefore" min="1" max="10" value="7" oninput="document.getElementById('anxietyBeforeVal').textContent=this.value">
+            </div>
+            <label>Что случилось (триггер):</label>
+            <textarea id="anxietyTrigger" rows="2" placeholder="Проверил счёт..."></textarea>
+            <label>Где был:</label>
+            <select id="anxietyLocation">
+                <option value="home">🏠 Дома</option>
+                <option value="warsaw">🏙️ Варшава</option>
+                <option value="sochaczew">🚗 Сохачев</option>
+                <option value="road">🛣️ В дороге</option>
+            </select>
+            <label>Автоматическая мысль:</label>
+            <textarea id="anxietyThought" rows="2" placeholder="'У меня не хватит денег...'"></textarea>
+            <button class="btn" onclick="saveAnxietyLog()">💾 Сохранить</button>
+            <button class="btn modal-close" onclick="closeModal('anxietyModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="sosModal">
+        <div class="modal-box">
+            <h3 id="sosTitle">🌬️ Техника</h3>
+            <div id="sosContent"></div>
+            <div class="slider-container" style="margin-top:15px;">
+                <div class="slider-label">
+                    <span>Уровень ПОСЛЕ:</span>
+                    <span id="anxietyAfterVal">5</span>
+                </div>
+                <input type="range" class="slider" id="anxietyAfter" min="1" max="10" value="5" oninput="document.getElementById('anxietyAfterVal').textContent=this.value">
+            </div>
+            <button class="btn" onclick="completeSOS()">✓ Готово (+10 🩸)</button>
+            <button class="btn modal-close" onclick="closeModal('sosModal')">Закрыть</button>
         </div>
     </div>
     
     <div class="modal" id="incomeModal">
         <div class="modal-box">
-            <h3>💰 Добавить Доход (чистыми)</h3>
+            <h3>💰 Добавить Доход</h3>
             <label>Чистая Сумма (zł):</label>
             <input type="number" id="incomeAmount" placeholder="740">
-            <button class="btn" onclick="showDistribution()">→ Распределить по Копилкам</button>
-            <button class="modal-close" onclick="closeModal('incomeModal')">Отмена</button>
+            <button class="btn" onclick="showDistribution()">→ Распределить</button>
+            <button class="btn modal-close" onclick="closeModal('incomeModal')">Отмена</button>
         </div>
     </div>
     
     <div class="modal" id="distributionModal">
         <div class="modal-box">
             <h3>🏺 Распредели по Копилкам</h3>
-            <p style="color:#999; font-size:12px; margin-bottom:15px;">Скорректируй суммы под свои купюры:</p>
             <div id="distributionList"></div>
-            <div style="margin-top:15px; padding:10px; background:rgba(139,0,0,0.2); border-radius:8px; border:1px solid #8b0000;">
-                <div style="display:flex; justify-content:space-between; font-size:13px;">
-                    <span>Всего распределено:</span>
-                    <span id="totalDistributed" style="color:#66ff66; font-weight:bold;">0 zł</span>
+            <div style="margin-top:12px; padding:10px; background:rgba(139,64,73,0.2); border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+                    <span>Распределено:</span>
+                    <span id="totalDistributed" style="color:#9ac99a; font-weight:bold;">0 zł</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:5px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
                     <span>Осталось:</span>
-                    <span id="remaining" style="color:#ff9966; font-weight:bold;">0 zł</span>
+                    <span id="remaining" style="color:#d4957d; font-weight:bold;">0 zł</span>
                 </div>
             </div>
-            <button class="btn" onclick="applyDistribution()">✓ Применить Распределение</button>
-            <button class="modal-close" onclick="closeModal('distributionModal')">Отмена</button>
+            <button class="btn" onclick="applyDistribution()">✓ Применить</button>
+            <button class="btn modal-close" onclick="closeModal('distributionModal')">Отмена</button>
         </div>
     </div>
     
@@ -327,112 +628,13 @@
                 <option value="education">📚 Обучение</option>
                 <option value="other">💳 Другое</option>
             </select>
-            <label>Заметка (опционально):</label>
-            <input type="text" id="expenseNote" placeholder="На что потратил">
-            <button class="btn" onclick="addExpense()">💸 Записать Расход</button>
-            <button class="modal-close" onclick="closeModal('expenseModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="bookingModal">
-        <div class="modal-box">
-            <h3>📅 Новая Запись</h3>
-            <label>Дата:</label>
-            <input type="date" id="bookingDate">
-            <label>Время:</label>
-            <input type="time" id="bookingTime" value="12:00">
-            <label>Имя клиента:</label>
-            <input type="text" id="bookingName" placeholder="Анна Ковальская">
-            <label>Город:</label>
-            <select id="bookingCity">
-                <option value="warsaw">🏙️ Варшава</option>
-                <option value="sochaczew">🚗 Сохачев</option>
-            </select>
-            <label>Тип клиента:</label>
-            <select id="bookingType">
-                <option value="new">✨ Новый клиент</option>
-                <option value="return">🔄 Постоянный клиент</option>
-            </select>
-            <label>Примерная цена (zł):</label>
-            <input type="number" id="bookingPrice" placeholder="1200">
-            <label>Заметки:</label>
-            <textarea id="bookingNotes" rows="2" placeholder="Контакт, пожелания..."></textarea>
-            <button class="btn" onclick="addBooking()">📅 Добавить Запись</button>
-            <button class="modal-close" onclick="closeModal('bookingModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="rewardModal">
-        <div class="modal-box">
-            <h3>🎁 Новая Награда</h3>
-            <label>Что хочешь купить:</label>
-            <input type="text" id="rewardName" placeholder="Новая машинка">
-            <label>Цена (zł):</label>
-            <input type="number" id="rewardPrice" placeholder="2000">
-            <label>Эмодзи:</label>
-            <input type="text" id="rewardEmoji" value="🎁" maxlength="2" placeholder="🎁">
-            <button class="btn" onclick="addReward()">🎁 Добавить Награду</button>
-            <button class="modal-close" onclick="closeModal('rewardModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <!-- Edit Booking Modal -->
-    <div class="modal" id="editBookingModal">
-        <div class="modal-box">
-            <h3>✏️ Редактировать Запись</h3>
-            <input type="hidden" id="editBookingId">
-            <label>Дата:</label>
-            <input type="date" id="editBookingDate">
-            <label>Время:</label>
-            <input type="time" id="editBookingTime">
-            <label>Имя клиента:</label>
-            <input type="text" id="editBookingName">
-            <label>Город:</label>
-            <select id="editBookingCity">
-                <option value="warsaw">🏙️ Варшава</option>
-                <option value="sochaczew">🚗 Сохачев</option>
-            </select>
-            <label>Тип клиента:</label>
-            <select id="editBookingType">
-                <option value="new">✨ Новый клиент</option>
-                <option value="return">🔄 Постоянный клиент</option>
-            </select>
-            <label>Цена (zł):</label>
-            <input type="number" id="editBookingPrice">
-            <label>Заметки:</label>
-            <textarea id="editBookingNotes" rows="2"></textarea>
-            <button class="btn" onclick="saveEditBooking()">💾 Сохранить Изменения</button>
-            <button class="modal-close" onclick="closeModal('editBookingModal')">Отмена</button>
-        </div>
-    </div>
-    
-    <!-- Edit Transaction Modal -->
-    <div class="modal" id="editTransactionModal">
-        <div class="modal-box">
-            <h3>✏️ Редактировать Транзакцию</h3>
-            <input type="hidden" id="editTransactionId">
-            <input type="hidden" id="editTransactionType">
-            <label>Сумма (zł):</label>
-            <input type="number" id="editTransactionAmount">
-            <label id="editTransactionCategoryLabel">Категория:</label>
-            <select id="editTransactionCategory">
-                <option value="rent">🏠 Аренда</option>
-                <option value="food">🍕 Еда</option>
-                <option value="transport">🚌 Дорога</option>
-                <option value="medicine">💊 Лекарства</option>
-                <option value="doctor">👨‍⚕️ Врач</option>
-                <option value="debt">📉 Долги</option>
-                <option value="education">📚 Обучение</option>
-                <option value="other">💳 Другое</option>
-            </select>
             <label>Заметка:</label>
-            <input type="text" id="editTransactionNote">
-            <button class="btn" onclick="saveEditTransaction()">💾 Сохранить Изменения</button>
-            <button class="btn-delete" style="width:100%; margin-top:10px;" onclick="deleteTransaction()">🗑️ Удалить Транзакцию</button>
-            <button class="modal-close" onclick="closeModal('editTransactionModal')">Отмена</button>
+            <input type="text" id="expenseNote" placeholder="На что потратил">
+            <button class="btn" onclick="addExpense()">💸 Записать</button>
+            <button class="btn modal-close" onclick="closeModal('expenseModal')">Закрыть</button>
         </div>
     </div>
     
-    <script src="./app.js"></script>
+    <script src="./demon-guide-v3.js"></script>
 </body>
 </html>

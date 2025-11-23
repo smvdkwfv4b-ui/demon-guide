@@ -1,55 +1,166 @@
+// ===== DATA STRUCTURE =====
 let data = {
-    blood: 0, balance: 0, level: 5,
+    // RPG System
+    level: 5,
+    xp: 0,
+    blood: 0,
+    
+    // Finances
+    balance: 0,
     piggyBanks: [
         {id:'cushion', name:'Финподушка', amount:0, goal:5000},
-        {id:'rent', name:'Следующая Аренда', amount:0, goal:3000},
+        {id:'rent', name:'Аренда', amount:0, goal:3000},
         {id:'debt', name:'Долги', amount:0, goal:0},
         {id:'teeth', name:'Зубы', amount:0, goal:3000},
         {id:'drawing', name:'Рисунок', amount:0, goal:800}
     ],
+    transactions: [],
+    
+    // Quests with streaks
     quests: [
-        {id:1,title:'Проверь Сообщения',desc:'Instagram и SMS',hint:'Быстрый ответ = больше клиентов',reward:10,period:'4h',done:false},
-        {id:2,title:'Пост о Датах',desc:'Сторис о свободных',hint:'Шаблон: "Свободные даты..."',reward:15,period:'4h',done:false},
-        {id:3,title:'Практика Рисунка',desc:'2+ часа эскизов',hint:'Тема: Кинжалы и мечи',reward:30,period:'daily',done:false},
-        {id:4,title:'AI Эксперименты',desc:'5 референсов Stable Diffusion',hint:'Черно-белая графика',reward:20,period:'daily',done:false},
-        {id:5,title:'Час Продвижения',desc:'1 час соцсети',hint:'Варшавское тату-комьюнити',reward:25,period:'daily',done:false},
-        {id:6,title:'Обнови Портфолио',desc:'3 работы Instagram',hint:'Хорошие фото = больше записей',reward:50,period:'weekly',done:false},
-        {id:7,title:'Варшавское Промо',desc:'Таргетированная реклама',hint:'ChatGPT для текста объявления',reward:60,period:'weekly',done:false},
-        {id:8,title:'Еженедельный Отчет',desc:'Статистика и отчет',hint:'Для анализа демоном',reward:40,period:'weekly',done:false}
+        {id:1,title:'Проверь Сообщения',desc:'Instagram и SMS',hint:'Быстрый ответ = больше клиентов',reward:10,xp:15,period:'4h',done:false,streak:0,lastDone:null},
+        {id:2,title:'Пост о Датах',desc:'Сторис о свободных',hint:'Шаблон: "Свободные даты..."',reward:15,xp:20,period:'4h',done:false,streak:0,lastDone:null},
+        {id:3,title:'Практика Рисунка',desc:'2+ часа эскизов',hint:'Тема: Кинжалы и мечи',reward:30,xp:50,period:'daily',done:false,streak:0,lastDone:null},
+        {id:4,title:'AI Эксперименты',desc:'5 референсов',hint:'Stable Diffusion',reward:20,xp:30,period:'daily',done:false,streak:0,lastDone:null},
+        {id:5,title:'Час Продвижения',desc:'1 час соцсети',hint:'Варшавское комьюнити',reward:25,xp:35,period:'daily',done:false,streak:0,lastDone:null},
+        {id:6,title:'Обнови Портфолио',desc:'3 работы Instagram',hint:'Хорошие фото = записи',reward:50,xp:80,period:'weekly',done:false,streak:0,lastDone:null},
+        {id:7,title:'Варшавское Промо',desc:'Таргетированная реклама',hint:'ChatGPT для текста',reward:60,xp:100,period:'weekly',done:false,streak:0,lastDone:null},
+        {id:8,title:'Еженедельный Отчет',desc:'Статистика',hint:'Для анализа демоном',reward:40,xp:70,period:'weekly',done:false,streak:0,lastDone:null}
     ],
-    diary: [], bookings: [], expenses: [], rewards: [], transactions: []
+    
+    // Anxiety tracking
+    anxietyLogs: [],
+    sosSessions: [],
+    
+    // Sleep tracking
+    sleepLogs: [],
+    
+    // Achievements
+    achievements: [
+        // Financial
+        {id:'first_1k',name:'Первая 1000',desc:'1000 zł в финподушке',icon:'💰',unlocked:false,category:'finance'},
+        {id:'rent_3x',name:'Стабильная Аренда',desc:'3 раза оплатил вовремя',icon:'🏠',unlocked:false,category:'finance'},
+        {id:'debt_500',name:'Минус Долги',desc:'Выплатил 500 по долгам',icon:'📉',unlocked:false,category:'finance'},
+        {id:'green_week',name:'Зелёная Неделя',desc:'Неделя без "красного"',icon:'💚',unlocked:false,category:'finance'},
+        
+        // Professional
+        {id:'portfolio_10',name:'10 Работ',desc:'10 работ в портфолио',icon:'🎨',unlocked:false,category:'pro'},
+        {id:'warsaw_first',name:'Варшавский Дебют',desc:'Первый клиент Варшава',icon:'🏙️',unlocked:false,category:'pro'},
+        {id:'warsaw_5x',name:'Варшава x5',desc:'5 клиентов подряд',icon:'🔥',unlocked:false,category:'pro'},
+        {id:'original_design',name:'Авторский Дизайн',desc:'Реализован без коллажа',icon:'✨',unlocked:false,category:'pro'},
+        
+        // Health
+        {id:'sleep_7d',name:'Неделя Сна',desc:'7 дней по 7+ часов',icon:'😴',unlocked:false,category:'health'},
+        {id:'anxiety_low',name:'Спокойствие',desc:'Неделя тревоги <5',icon:'🧘',unlocked:false,category:'health'},
+        {id:'diary_30d',name:'Месяц Дневника',desc:'30 дней заполнения',icon:'📔',unlocked:false,category:'health'},
+        {id:'therapy_10',name:'Терапия x10',desc:'10 сессий психолога',icon:'💬',unlocked:false,category:'health'}
+    ],
+    
+    bookings: [],
+    rewards: []
 };
 
 let tempIncome = 0;
 let tempDistribution = {};
+let currentSOSType = '';
 
+// ===== INIT =====
 function load() {
-    const saved = localStorage.getItem('demonData');
+    const saved = localStorage.getItem('demonDataV3');
     if (saved) {
-        try { data = {...data, ...JSON.parse(saved)}; }
-        catch(e) { console.error('Failed to load'); }
+        try { 
+            const loaded = JSON.parse(saved);
+            data = {...data, ...loaded};
+        }
+        catch(e) { console.error('Load failed'); }
     }
     render();
 }
 
 function save() {
-    localStorage.setItem('demonData', JSON.stringify(data));
+    localStorage.setItem('demonDataV3', JSON.stringify(data));
 }
 
-function render() {
-    document.getElementById('blood').textContent = data.blood;
-    document.getElementById('level').textContent = data.level;
-    document.getElementById('balance').textContent = data.balance;
-    document.getElementById('stat-level').textContent = data.level;
-    document.getElementById('stat-blood').textContent = data.blood;
-    document.getElementById('stat-quests').textContent = data.quests.filter(q=>q.done).length;
-    document.getElementById('stat-money').textContent = data.balance;
+// ===== XP & LEVEL SYSTEM =====
+function getXPForLevel(lvl) {
+    return 100 + (lvl - 1) * 50; // Level 1: 100, Level 2: 150, etc
+}
+
+function addXP(amount) {
+    data.xp += amount;
+    const needed = getXPForLevel(data.level);
     
+    while(data.xp >= needed) {
+        data.xp -= needed;
+        data.level++;
+        alert(`🎉 LEVEL UP! Теперь уровень ${data.level}!`);
+    }
+    save();
+}
+
+// ===== RENDER =====
+function render() {
+    renderHome();
     renderQuests();
+    renderAnxiety();
     renderFinance();
-    renderCalendar();
-    renderDiary();
-    renderRewards();
+    renderSleep();
+    renderAchievements();
+    renderStats();
+    
+    // Update header
+    document.getElementById('level').textContent = data.level;
+    document.getElementById('xp').textContent = data.xp;
+    document.getElementById('blood').textContent = data.blood;
+}
+
+function renderHome() {
+    // XP Bar
+    const needed = getXPForLevel(data.level);
+    const pct = (data.xp / needed * 100).toFixed(0);
+    document.getElementById('xpBar').style.width = pct + '%';
+    document.getElementById('xpCurrent').textContent = data.xp;
+    document.getElementById('xpNeeded').textContent = needed;
+    document.getElementById('nextLevel').textContent = data.level + 1;
+    
+    // Finance
+    document.getElementById('homeBalance').textContent = Math.round(data.balance);
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
+    const toGoal = Math.max(0, cushion.goal - cushion.amount);
+    document.getElementById('homeToGoal').textContent = Math.round(toGoal);
+    const cushionPct = (cushion.amount / cushion.goal * 100).toFixed(0);
+    document.getElementById('homeCushionProgress').style.width = cushionPct + '%';
+    
+    // Today's quests
+    const today = data.quests.filter(q=>!q.done).slice(0,3);
+    document.getElementById('todayQuests').innerHTML = today.length > 0 ? today.map(q=>`
+        <div class="card">
+            <div class="quest-row">
+                <div class="checkbox ${q.done?'done':''}" onclick="toggleQuest(${q.id})"></div>
+                <div class="quest-info">
+                    <div class="card-title">${q.title} ${q.streak>0?`<span class="streak">🔥 ${q.streak}</span>`:''}</div>
+                    <div class="card-desc">${q.desc}</div>
+                    <div class="card-reward">+${q.reward} 🩸 +${q.xp} XP</div>
+                </div>
+            </div>
+        </div>
+    `).join('') : '<div class="card">Все квесты выполнены! 🎉</div>';
+    
+    // Bookings
+    const todayStr = new Date().toISOString().split('T')[0];
+    const upcoming = data.bookings.filter(b=>!b.completed && b.date>=todayStr).slice(0,2);
+    document.getElementById('homeBookings').innerHTML = upcoming.length>0 ? upcoming.map(b=>`
+        <div class="card">
+            <div class="card-title">${b.name}</div>
+            <div class="card-desc">📅 ${formatDate(b.date)} в ${b.time} • ${b.city==='warsaw'?'🏙️ Варшава':'🚗 Сохачев'}</div>
+            ${b.price?`<div style="font-size:12px; color:#9ac99a; font-weight:bold;">💰 ${b.price} zł</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Нет записей на неделе</div>';
+    
+    // Anxiety
+    const todayAnxiety = data.anxietyLogs.filter(l=>l.date===todayStr);
+    const lastAnxiety = todayAnxiety.length > 0 ? todayAnxiety[todayAnxiety.length-1].before : null;
+    document.getElementById('homeAnxiety').innerHTML = lastAnxiety ? `${lastAnxiety}/10` : '-/10';
 }
 
 function renderQuests() {
@@ -60,10 +171,13 @@ function renderQuests() {
                 <div class="quest-row">
                     <div class="checkbox ${q.done?'done':''}" onclick="toggleQuest(${q.id})"></div>
                     <div class="quest-info">
-                        <div class="card-title">${q.title}</div>
+                        <div class="card-title">
+                            ${q.title} 
+                            ${q.streak>0?`<span class="streak">🔥 ${q.streak}</span>`:''}
+                        </div>
                         <div class="card-desc">${q.desc}</div>
                         <div class="card-hint">💡 ${q.hint}</div>
-                        <div class="card-reward">+${q.reward} 🩸</div>
+                        <div class="card-reward">+${q.reward} 🩸 +${q.xp} XP</div>
                     </div>
                 </div>
             </div>
@@ -71,205 +185,371 @@ function renderQuests() {
     });
 }
 
-function renderFinance() {
-    document.getElementById('piggyBanks').innerHTML = data.piggyBanks.map(b=>{
-        const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
-        return `
-            <div class="piggy">
-                <div class="piggy-header">
-                    <div class="piggy-name">${b.name}</div>
-                    <div class="piggy-amount">${Math.round(b.amount)} ${b.goal>0?`/ ${b.goal}`:''} zł</div>
-                </div>
-                ${b.goal>0?`<div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
-            </div>
-        `;
-    }).join('');
-    
-    document.getElementById('statsGoals').innerHTML = data.piggyBanks.map(b=>{
-        const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
-        return `
-            <div class="piggy">
-                <div class="piggy-header">
-                    <div class="piggy-name">${b.name}</div>
-                    <div class="piggy-amount">${Math.round(b.amount)} ${b.goal>0?`/ ${b.goal}`:''} zł</div>
-                </div>
-                ${b.goal>0?`<div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
-            </div>
-        `;
-    }).join('');
-    
-    const recent = data.transactions.slice(-15).reverse();
-    document.getElementById('transactionList').innerHTML = recent.length>0 ? recent.map(t=>{
-        const isIncome = t.type === 'income';
-        return `
-            <div class="transaction-card ${isIncome?'income':'expense'}" onclick="editTransaction(${t.id})">
-                <div class="transaction-left">
-                    <div class="transaction-type">${isIncome?'💰 Доход':'💸 Расход'}</div>
-                    <div class="transaction-desc">${t.description || (isIncome?'Доход':getCategoryName(t.category))}</div>
-                    <div class="transaction-date">${formatDateTime(t.date)}</div>
-                </div>
-                <div class="transaction-amount ${isIncome?'positive':'negative'}">
-                    ${isIncome?'+':'-'}${Math.round(t.amount)} zł
-                </div>
-            </div>
-        `;
-    }).join('') : '<div class="card">Пока нет транзакций</div>';
-}
-
-function renderCalendar() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const today = now.getDate();
-    
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startDay = firstDay === 0 ? 6 : firstDay - 1;
-    
-    let html = '';
-    for(let i = 0; i < startDay; i++) html += '<div class="cal-day"></div>';
-    
-    for(let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
-        const hasBooking = dayBookings.length > 0;
-        const isToday = day === today;
-        
-        let clientInfo = '';
-        if(hasBooking && dayBookings[0]) {
-            const b = dayBookings[0];
-            const shortName = b.name.split(' ')[0];
-            clientInfo = `
-                <div class="cal-client-name">${shortName}</div>
-                ${b.price?`<div class="cal-client-price">${b.price}zł</div>`:''}
-            `;
-        }
-        
-        html += `
-            <div class="cal-day ${isToday?'today':''} ${hasBooking?'has-booking':''}" onclick="calendarDayClick('${dateStr}')">
-                <div class="cal-day-num">${day}</div>
-                ${clientInfo}
-            </div>
-        `;
-    }
-    document.getElementById('calendar').innerHTML = html;
-    
-    const todayStr = now.toISOString().split('T')[0];
-    const upcoming = data.bookings.filter(b => !b.completed && b.date >= todayStr).sort((a,b) => new Date(a.date+' '+a.time) - new Date(b.date+' '+b.time));
-    const completed = data.bookings.filter(b => b.completed).sort((a,b) => new Date(b.completedAt) - new Date(a.completedAt)).slice(0,5);
-    
-    document.getElementById('upcomingBookings').innerHTML = upcoming.length>0 ? upcoming.map(b=>`
-        <div class="booking-card">
-            <div class="booking-header">
-                <div>
-                    <div class="booking-name">${b.name}</div>
-                    <div style="display:flex;gap:4px;margin-top:4px;">
-                        <span class="booking-badge badge-${b.type}">${b.type==='new'?'✨ Новый':'🔄 Постоянный'}</span>
-                        <span class="booking-badge badge-${b.city}">${b.city==='warsaw'?'🏙️ Варшава':'🚗 Сохачев'}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="booking-info">📅 ${formatDate(b.date)} в ${b.time}</div>
-            ${b.price?`<div class="booking-info">💰 ${b.price} zł</div>`:''}
-            ${b.notes?`<div class="booking-info">📝 ${b.notes}</div>`:''}
-            <div class="booking-actions">
-                <button class="btn btn-small btn-edit" onclick="event.stopPropagation(); editBooking(${b.id})">✏️ Изменить</button>
-                <button class="btn btn-small btn-complete" onclick="event.stopPropagation(); completeBooking(${b.id})">✓ Готово</button>
-                <button class="btn btn-small btn-delete" onclick="event.stopPropagation(); deleteBooking(${b.id})">✕</button>
-            </div>
-        </div>
-    `).join('') : '<div class="card">Нет предстоящих записей</div>';
-    
-    document.getElementById('completedBookings').innerHTML = completed.length>0 ? completed.map(b=>`
-        <div class="booking-card" style="opacity:0.7">
-            <div class="booking-name">✓ ${b.name}</div>
-            <div class="booking-info">${formatDate(b.date)} • ${b.city==='warsaw'?'Варшава':'Сохачев'}</div>
-            ${b.price?`<div class="booking-info" style="color:#66ff66">+${b.price} zł</div>`:''}
-        </div>
-    `).join('') : '<div class="card">Пока нет завершённых</div>';
-    
-    const stats = {
-        total: data.bookings.filter(b=>b.completed).length,
-        warsaw: data.bookings.filter(b=>b.completed && b.city==='warsaw').length,
-        sochaczew: data.bookings.filter(b=>b.completed && b.city==='sochaczew').length,
-        new: data.bookings.filter(b=>b.completed && b.type==='new').length
-    };
-    document.getElementById('stat-total').textContent = stats.total;
-    document.getElementById('stat-warsaw').textContent = stats.warsaw;
-    document.getElementById('stat-sochaczew').textContent = stats.sochaczew;
-    document.getElementById('stat-new').textContent = stats.new;
-}
-
-function renderDiary() {
-    const recent = data.diary.slice(-7).reverse();
-    document.getElementById('diaryHistory').innerHTML = recent.length>0 ? recent.map(e=>`
+function renderAnxiety() {
+    const last7 = data.anxietyLogs.slice(-7).reverse();
+    document.getElementById('anxietyHistory').innerHTML = last7.length>0 ? last7.map(l=>`
         <div class="card">
-            <div class="card-title">${formatDate(e.date)}</div>
-            <div class="card-desc">😊 ${e.mood}/10 | ⚡ ${e.energy}/10 | 😰 ${e.anxiety}/10 ${e.steps?`| 👣 ${e.steps}`:''}</div>
-            ${e.achievements?`<div class="card-hint">✓ ${e.achievements}</div>`:''}
-            ${e.struggles?`<div class="card-hint">⚠️ ${e.struggles}</div>`:''}
+            <div class="card-title">${formatDate(l.date)} ${l.time}</div>
+            <div class="card-desc">
+                📍 ${getLocationName(l.location)} • 
+                ${l.before}/10 ${l.after?`→ ${l.after}/10`:''} 
+                ${l.after && l.after<l.before?'✓ Лучше':''}
+            </div>
+            ${l.trigger?`<div class="card-hint">Триггер: ${l.trigger}</div>`:''}
+            ${l.thought?`<div class="card-hint">💭 "${l.thought}"</div>`:''}
         </div>
     `).join('') : '<div class="card">Пока нет записей</div>';
 }
 
-function renderRewards() {
-    document.getElementById('rewardsList').innerHTML = data.rewards.length>0 ? data.rewards.map(r=>{
-        const canBuy = data.balance >= r.price && !r.purchased;
+function renderFinance() {
+    document.getElementById('balance').textContent = Math.round(data.balance);
+    
+    // Forecast
+    const avgIncome = calculateAvgIncome();
+    const avgExpense = calculateAvgExpense();
+    const monthly = avgIncome - avgExpense;
+    
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
+    const monthsToCushion = monthly>0 ? Math.ceil((cushion.goal - cushion.amount) / monthly) : '∞';
+    
+    document.getElementById('forecastBox').innerHTML = `
+        <div class="forecast-box">
+            <div class="forecast-title">📈 Прогноз</div>
+            <div class="forecast-item">
+                <span>Средний доход/мес:</span>
+                <span style="color:#9ac99a;">${Math.round(avgIncome)} zł</span>
+            </div>
+            <div class="forecast-item">
+                <span>Средний расход/мес:</span>
+                <span style="color:#c85050;">${Math.round(avgExpense)} zł</span>
+            </div>
+            <div class="forecast-item">
+                <span>Остаётся:</span>
+                <span style="color:${monthly>0?'#9ac99a':'#c85050'};">${monthly>0?'+':''}${Math.round(monthly)} zł</span>
+            </div>
+            <div class="forecast-item">
+                <span>Финподушка через:</span>
+                <span style="color:#d4957d;">${monthsToCushion} мес</span>
+            </div>
+        </div>
+    `;
+    
+    // Piggy banks
+    document.getElementById('piggyBanks').innerHTML = data.piggyBanks.map(b=>{
+        const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
         return `
-            <div class="reward-card" style="${r.purchased?'opacity:0.5':''}">
-                <div class="reward-icon">${r.emoji}</div>
-                <div class="reward-info">
-                    <div class="reward-name">${r.name}</div>
-                    <div class="reward-price">${r.price} zł</div>
-                    <div class="reward-status">${r.purchased?'✓ Куплено':canBuy?'✓ Можешь купить!':'Не хватает '+Math.round(r.price-data.balance)+' zł'}</div>
+            <div class="progress-box">
+                <div class="progress-header">
+                    <div class="progress-name">${b.name}</div>
+                    <div class="progress-amount">${Math.round(b.amount)} ${b.goal>0?`/ ${b.goal}`:''} zł</div>
                 </div>
-                <div>
-                    ${canBuy?`<button class="btn btn-small" onclick="buyReward(${r.id})">Купить</button>`:''}
-                    <button class="btn btn-small btn-delete" onclick="deleteReward(${r.id})">✕</button>
-                </div>
+                ${b.goal>0?`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
             </div>
         `;
-    }).join('') : '<div class="card">Добавь награды для мотивации</div>';
+    }).join('');
+    
+    // Transactions
+    const recent = data.transactions.slice(-10).reverse();
+    document.getElementById('transactionList').innerHTML = recent.length>0 ? recent.map(t=>`
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div class="card-title">${t.type==='income'?'💰 Доход':'💸 '+getCategoryName(t.category)}</div>
+                    <div class="card-desc">${formatDateTime(t.date)}</div>
+                    ${t.description?`<div class="card-desc">${t.description}</div>`:''}
+                </div>
+                <div style="font-size:18px; font-weight:bold; color:${t.type==='income'?'#9ac99a':'#c85050'};">
+                    ${t.type==='income'?'+':'-'}${Math.round(t.amount)} zł
+                </div>
+            </div>
+        </div>
+    `).join('') : '<div class="card">Пока нет транзакций</div>';
 }
 
+function renderSleep() {
+    const last7 = data.sleepLogs.slice(-7).reverse();
+    
+    // Insights
+    const insights = calculateSleepInsights();
+    document.getElementById('sleepInsights').innerHTML = insights.length>0 ? insights.map(i=>`
+        <div class="insight-box">
+            <div class="insight-icon">${i.icon}</div>
+            <div class="insight-text">${i.text}</div>
+        </div>
+    `).join('') : '<div class="card">Заполни 3+ дня для инсайтов</div>';
+    
+    // History
+    document.getElementById('sleepHistory').innerHTML = last7.length>0 ? last7.map(s=>{
+        const hours = s.hours.toFixed(1);
+        const quality = s.quality >= 7 ? 'good' : s.quality >= 4 ? 'ok' : 'bad';
+        const qualityText = s.quality >= 7 ? '😊 Хорошо' : s.quality >= 4 ? '😐 Норм' : '😞 Плохо';
+        
+        return `
+            <div class="sleep-entry">
+                <div class="sleep-date">${formatDate(s.date)}</div>
+                <div class="sleep-info">
+                    🌙 ${hours}ч сна • 
+                    <span class="sleep-quality quality-${quality}">${qualityText}</span>
+                    ${s.wakeups>0?` • 😵 ${s.wakeups} раз проснулся`:''}
+                </div>
+                ${s.issues?`<div class="card-hint">${s.issues}</div>`:''}
+            </div>
+        `;
+    }).join('') : '<div class="card">Начни отслеживать сон</div>';
+}
+
+function renderAchievements() {
+    ['finance','pro','health'].forEach(cat=>{
+        const achievements = data.achievements.filter(a=>a.category===cat);
+        const container = document.getElementById(`achievements${cat==='finance'?'Finance':cat==='pro'?'Pro':'Health'}`);
+        container.innerHTML = achievements.map(a=>`
+            <div class="achievement ${a.unlocked?'':'locked'}">
+                <div class="achievement-icon">${a.icon}</div>
+                <div class="achievement-info">
+                    <div class="achievement-name">${a.name} ${a.unlocked?'✓':''}</div>
+                    <div class="achievement-desc">${a.desc}</div>
+                </div>
+            </div>
+        `).join('');
+    });
+    
+    checkAchievements();
+}
+
+function renderStats() {
+    document.getElementById('statLevel').textContent = data.level;
+    document.getElementById('statBlood').textContent = data.blood;
+    document.getElementById('statQuests').textContent = data.quests.filter(q=>q.done).length;
+    document.getElementById('statWork').textContent = data.bookings.filter(b=>b.completed).length;
+    
+    document.getElementById('statsProgress').innerHTML = data.piggyBanks.map(b=>{
+        const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
+        return `
+            <div class="progress-box">
+                <div class="progress-header">
+                    <div class="progress-name">${b.name}</div>
+                    <div class="progress-amount">${Math.round(b.amount)} ${b.goal>0?`/ ${b.goal}`:''} zł</div>
+                </div>
+                ${b.goal>0?`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== QUEST SYSTEM =====
 function toggleQuest(id) {
     const q = data.quests.find(x=>x.id===id);
     if(!q) return;
+    
     q.done = !q.done;
-    if(q.done) data.blood += q.reward;
-    else data.blood = Math.max(0, data.blood-q.reward);
+    const today = new Date().toISOString().split('T')[0];
+    
+    if(q.done) {
+        data.blood += q.reward;
+        addXP(q.xp);
+        
+        // Streak logic
+        if(q.lastDone) {
+            const lastDate = new Date(q.lastDone);
+            const todayDate = new Date(today);
+            const diffDays = Math.floor((todayDate - lastDate) / (1000*60*60*24));
+            
+            if(diffDays === 1) {
+                q.streak++;
+            } else if(diffDays > 1) {
+                q.streak = 1;
+            }
+        } else {
+            q.streak = 1;
+        }
+        q.lastDone = today;
+        
+        if(q.streak >= 7) {
+            alert(`🔥 STREAK 7 ДНЕЙ! ${q.title}! +${q.xp*2} BONUS XP!`);
+            addXP(q.xp);
+        }
+    } else {
+        data.blood = Math.max(0, data.blood - q.reward);
+    }
+    
     save(); render();
 }
 
-function switchTab(name) {
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById('screen-'+name).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+// ===== ANXIETY SOS =====
+function startSOS(type) {
+    currentSOSType = type;
+    
+    const content = {
+        breathing: `
+            <div style="text-align:center; padding:20px;">
+                <p style="margin-bottom:15px;">Дыши по схеме:</p>
+                <div style="font-size:18px; line-height:2;">
+                    <div>Вдох носом: <b>4 секунды</b></div>
+                    <div>Задержка: <b>7 секунд</b></div>
+                    <div>Выдох ртом: <b>8 секунд</b></div>
+                </div>
+                <p style="margin-top:15px; color:#888; font-size:12px;">Повтори 4 раза</p>
+            </div>
+        `,
+        grounding: `
+            <div style="padding:15px;">
+                <p style="margin-bottom:10px; font-weight:bold;">Назови вслух:</p>
+                <div style="line-height:1.8; font-size:13px;">
+                    <div>👁️ 5 вещей которые ВИДИШЬ</div>
+                    <div>👂 4 звука которые СЛЫШИШЬ</div>
+                    <div>🤚 3 вещи которые ТРОГАЕШЬ</div>
+                    <div>👃 2 запаха которые ЧУВСТВУЕШЬ</div>
+                    <div>👅 1 вкус во РТУ</div>
+                </div>
+            </div>
+        `,
+        thoughts: `
+            <div style="padding:15px;">
+                <p style="margin-bottom:10px;">Запиши мысль которая крутится:</p>
+                <textarea id="thoughtCapture" style="width:100%; min-height:60px; padding:8px; background:rgba(40,32,35,0.6); border:2px solid #8b4049; border-radius:8px; color:#d4c5ba; font-family:'Courier New',monospace;"></textarea>
+                <p style="margin-top:10px; font-size:12px; color:#888;">Это скорее всего одно из:</p>
+                <div style="font-size:11px; line-height:1.6; margin-top:5px;">
+                    <div>• Катастрофизация ("Всё плохо")</div>
+                    <div>• Чтение мыслей ("Они думают...")</div>
+                    <div>• Чёрно-белое мышление</div>
+                    <div>• "Должен" вместо "хочу"</div>
+                </div>
+            </div>
+        `
+    };
+    
+    const titles = {
+        breathing: '🌬️ Дыхание 4-7-8',
+        grounding: '🧊 Заземление 5-4-3-2-1',
+        thoughts: '💭 Ловушка Мыслей'
+    };
+    
+    document.getElementById('sosTitle').textContent = titles[type];
+    document.getElementById('sosContent').innerHTML = content[type];
+    showModal('sosModal');
 }
 
-function showModal(id) { document.getElementById(id).classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function completeSOS() {
+    const after = parseInt(document.getElementById('anxietyAfter').value);
+    
+    data.sosSessions.push({
+        type: currentSOSType,
+        date: new Date().toISOString(),
+        anxietyAfter: after
+    });
+    
+    data.blood += 10;
+    addXP(15);
+    
+    save(); render(); closeModal('sosModal');
+    alert('✓ Молодец! +10 🩸 +15 XP');
+}
 
-function showDiary() { showModal('diaryModal'); }
+function showAnxietyLog() {
+    showModal('anxietyModal');
+}
 
-function saveDiary() {
-    const entry = {
+function saveAnxietyLog() {
+    const before = parseInt(document.getElementById('anxietyBefore').value);
+    const trigger = document.getElementById('anxietyTrigger').value;
+    const location = document.getElementById('anxietyLocation').value;
+    const thought = document.getElementById('anxietyThought').value;
+    
+    data.anxietyLogs.push({
         date: new Date().toISOString().split('T')[0],
-        mood: document.getElementById('mood').value,
-        energy: document.getElementById('energy').value,
-        anxiety: document.getElementById('anxiety').value,
-        steps: document.getElementById('steps').value,
-        achievements: document.getElementById('achievements').value,
-        struggles: document.getElementById('struggles').value,
-        timestamp: new Date().toISOString()
-    };
-    data.diary.push(entry);
-    data.blood += 20;
-    save(); render(); closeModal('diaryModal');
-    document.getElementById('steps').value='';
-    document.getElementById('achievements').value='';
-    document.getElementById('struggles').value='';
+        time: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}),
+        before, trigger, location, thought
+    });
+    
+    data.blood += 5;
+    addXP(10);
+    
+    save(); render(); closeModal('anxietyModal');
+}
+
+// ===== SLEEP TRACKING =====
+function showSleepLog() {
+    showModal('sleepModal');
+}
+
+function saveSleep() {
+    const bedTime = document.getElementById('sleepBedTime').value;
+    const wakeTime = document.getElementById('sleepWakeTime').value;
+    const quality = parseInt(document.getElementById('sleepQuality').value);
+    const wakeups = parseInt(document.getElementById('sleepWakeups').value);
+    const issues = document.getElementById('sleepIssues').value;
+    
+    // Calculate hours
+    const bed = new Date('2000-01-01 ' + bedTime);
+    let wake = new Date('2000-01-01 ' + wakeTime);
+    if(wake < bed) wake = new Date('2000-01-02 ' + wakeTime);
+    const hours = (wake - bed) / (1000*60*60);
+    
+    data.sleepLogs.push({
+        date: new Date().toISOString().split('T')[0],
+        bedTime, wakeTime, hours, quality, wakeups, issues
+    });
+    
+    const reward = hours >= 7 ? 15 : 10;
+    const xpReward = hours >= 7 ? 25 : 15;
+    data.blood += reward;
+    addXP(xpReward);
+    
+    save(); render(); closeModal('sleepModal');
+    
+    if(hours >= 7) {
+        alert(`✓ Отлично! 7+ часов! +${reward} 🩸 +${xpReward} XP`);
+    }
+}
+
+function calculateSleepInsights() {
+    if(data.sleepLogs.length < 3) return [];
+    
+    const insights = [];
+    const recent = data.sleepLogs.slice(-7);
+    const avgHours = recent.reduce((s,l)=>s+l.hours,0) / recent.length;
+    
+    if(avgHours < 6.5) {
+        insights.push({
+            icon: '😴',
+            text: `Средний сон: ${avgHours.toFixed(1)}ч. Это мало! Цель: 7+ часов для энергии и меньшей тревоги.`
+        });
+    } else if(avgHours >= 7) {
+        insights.push({
+            icon: '✅',
+            text: `Отлично! Средний сон: ${avgHours.toFixed(1)}ч. Продолжай в том же духе!`
+        });
+    }
+    
+    // Correlations with anxiety
+    if(data.anxietyLogs.length >= 3) {
+        const anxietyDates = data.anxietyLogs.map(a=>a.date);
+        const sleepDates = recent.map(s=>s.date);
+        const poorSleepDays = recent.filter(s=>s.hours<6).map(s=>s.date);
+        
+        const anxietyAfterPoorSleep = anxietyDates.filter(d=>poorSleepDays.includes(d)).length;
+        if(anxietyAfterPoorSleep >= 2) {
+            insights.push({
+                icon: '🔗',
+                text: `Замечено: после плохого сна (<6ч) тревога выше. Связь сон→тревога подтверждена.`
+            });
+        }
+    }
+    
+    return insights;
+}
+
+// ===== FINANCE =====
+function calculateAvgIncome() {
+    const incomes = data.transactions.filter(t=>t.type==='income');
+    if(incomes.length === 0) return 0;
+    return incomes.reduce((s,t)=>s+t.amount,0) / Math.max(1, incomes.length/3);
+}
+
+function calculateAvgExpense() {
+    const expenses = data.transactions.filter(t=>t.type==='expense');
+    if(expenses.length === 0) return 0;
+    return expenses.reduce((s,t)=>s+t.amount,0) / Math.max(1, expenses.length/3);
 }
 
 function showAddIncome() { showModal('incomeModal'); }
@@ -322,9 +602,9 @@ function showDistribution() {
     }
     
     document.getElementById('distributionList').innerHTML = data.piggyBanks.map(b=>`
-        <div class="distribute-row">
-            <div class="distribute-name">${b.name}</div>
-            <input type="number" class="distribute-input" id="dist-${b.id}" value="${tempDistribution[b.id] || 0}" oninput="updateTotal()">
+        <div style="background:rgba(40,32,35,0.6); border:2px solid #8b4049; border-radius:8px; padding:10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="color:#d4957d; font-size:12px; font-weight:bold;">${b.name}</div>
+            <input type="number" style="width:90px; text-align:right; background:rgba(40,32,35,0.6); border:2px solid #8b4049; border-radius:6px; padding:6px; color:#d4c5ba; font-family:'Courier New',monospace;" id="dist-${b.id}" value="${tempDistribution[b.id] || 0}" oninput="updateTotal()">
         </div>
     `).join('');
     
@@ -360,9 +640,13 @@ function applyDistribution() {
         description: 'Доход',
         date: new Date().toISOString()
     });
+    
+    data.blood += 20;
+    addXP(30);
+    
     save(); render(); closeModal('distributionModal');
     document.getElementById('incomeAmount').value='';
-    alert(`✓ Доход ${Math.round(tempIncome)} zł добавлен и распределен!`);
+    alert(`✓ Доход ${Math.round(tempIncome)} zł добавлен! +20 🩸 +30 XP`);
 }
 
 function showAddExpense() { showModal('expenseModal'); }
@@ -375,11 +659,6 @@ function addExpense() {
     
     data.balance -= amount;
     const expenseId = Date.now();
-    data.expenses.push({
-        amount, category, note,
-        date: new Date().toISOString(),
-        id: expenseId
-    });
     data.transactions.push({
         id: expenseId,
         type: 'expense',
@@ -388,149 +667,100 @@ function addExpense() {
         description: note,
         date: new Date().toISOString()
     });
+    
     save(); render(); closeModal('expenseModal');
     document.getElementById('expenseAmount').value='';
     document.getElementById('expenseNote').value='';
 }
 
-function showAddBooking() {
-    document.getElementById('bookingDate').value = new Date().toISOString().split('T')[0];
-    showModal('bookingModal');
-}
-
-function addBooking() {
-    const date = document.getElementById('bookingDate').value;
-    const time = document.getElementById('bookingTime').value;
-    const name = document.getElementById('bookingName').value;
-    const city = document.getElementById('bookingCity').value;
-    const type = document.getElementById('bookingType').value;
-    const price = parseFloat(document.getElementById('bookingPrice').value) || 0;
-    const notes = document.getElementById('bookingNotes').value;
+// ===== ACHIEVEMENTS =====
+function checkAchievements() {
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
     
-    if(!date || !name) return alert('Заполни дату и имя!');
-    
-    data.bookings.push({
-        id: Date.now(), date, time, name, city, type, price, notes,
-        completed: false, createdAt: new Date().toISOString()
-    });
-    save(); render(); closeModal('bookingModal');
-    document.getElementById('bookingName').value='';
-    document.getElementById('bookingPrice').value='';
-    document.getElementById('bookingNotes').value='';
-}
-
-function completeBooking(id) {
-    const b = data.bookings.find(x=>x.id===id);
-    if(!b || b.completed) return;
-    
-    if(b.price && confirm(`Добавить доход ${b.price} zł?`)) {
-        document.getElementById('incomeAmount').value = b.price;
-        showDistribution();
+    // First 1k
+    const ach1k = data.achievements.find(a=>a.id==='first_1k');
+    if(!ach1k.unlocked && cushion.amount >= 1000) {
+        ach1k.unlocked = true;
+        alert('🏆 ДОСТИЖЕНИЕ! Первая 1000 в подушке! +50 🩸 +80 XP');
+        data.blood += 50;
+        addXP(80);
     }
     
-    b.completed = true;
-    b.completedAt = new Date().toISOString();
-    data.blood += 30;
-    save(); render();
-}
-
-function deleteBooking(id) {
-    if(!confirm('Удалить запись?')) return;
-    data.bookings = data.bookings.filter(b=>b.id!==id);
-    save(); render();
-}
-
-function showAddReward() { showModal('rewardModal'); }
-
-function addReward() {
-    const name = document.getElementById('rewardName').value;
-    const price = parseFloat(document.getElementById('rewardPrice').value);
-    const emoji = document.getElementById('rewardEmoji').value || '🎁';
-    if(!name || !price) return alert('Заполни все поля!');
+    // 7 days sleep
+    if(data.sleepLogs.length >= 7) {
+        const last7 = data.sleepLogs.slice(-7);
+        const all7h = last7.every(s=>s.hours>=7);
+        const achSleep = data.achievements.find(a=>a.id==='sleep_7d');
+        if(!achSleep.unlocked && all7h) {
+            achSleep.unlocked = true;
+            alert('🏆 ДОСТИЖЕНИЕ! Неделя сна 7+ часов! +50 🩸 +80 XP');
+            data.blood += 50;
+            addXP(80);
+        }
+    }
     
-    data.rewards.push({ id: Date.now(), name, price, emoji, purchased: false });
-    save(); render(); closeModal('rewardModal');
-    document.getElementById('rewardName').value='';
-    document.getElementById('rewardPrice').value='';
-    document.getElementById('rewardEmoji').value='🎁';
+    save();
 }
 
-function buyReward(id) {
-    const r = data.rewards.find(x=>x.id===id);
-    if(!r || r.purchased || data.balance < r.price) return;
-    if(!confirm(`Купить "${r.name}" за ${r.price} zł?`)) return;
-    r.purchased = true;
-    data.balance -= r.price;
-    save(); render();
-    alert(`🎉 Поздравляю! Ты купил ${r.name}!`);
-}
-
-function deleteReward(id) {
-    if(!confirm('Удалить награду?')) return;
-    data.rewards = data.rewards.filter(r=>r.id!==id);
-    save(); render();
-}
-
+// ===== EXPORT =====
 function exportReport() {
     const report = {
         export_date: new Date().toISOString(),
-        player: { level: data.level, blood_points: data.blood, balance: data.balance },
+        level: data.level,
+        xp: data.xp,
+        blood: data.blood,
+        balance: data.balance,
         piggy_banks: data.piggyBanks.map(b=>({
-            name:b.name, amount:Math.round(b.amount), goal:b.goal,
-            progress_percent: b.goal>0 ? Math.round(b.amount/b.goal*100) : 0
+            name:b.name, 
+            amount:Math.round(b.amount), 
+            goal:b.goal,
+            progress: b.goal>0 ? Math.round(b.amount/b.goal*100) : 0
         })),
         quests: {
             total: data.quests.length,
             completed: data.quests.filter(q=>q.done).length,
-            completion_rate: Math.round(data.quests.filter(q=>q.done).length / data.quests.length * 100)
+            streaks: data.quests.filter(q=>q.streak>0).map(q=>({
+                title:q.title, 
+                streak:q.streak
+            }))
         },
-        diary: {
-            total_entries: data.diary.length,
-            last_7_days: data.diary.slice(-7),
-            avg_mood: data.diary.length>0 ? (data.diary.reduce((s,e)=>s+parseInt(e.mood||5),0)/data.diary.length).toFixed(1) : 0,
-            avg_energy: data.diary.length>0 ? (data.diary.reduce((s,e)=>s+parseInt(e.energy||5),0)/data.diary.length).toFixed(1) : 0,
-            avg_anxiety: data.diary.length>0 ? (data.diary.reduce((s,e)=>s+parseInt(e.anxiety||5),0)/data.diary.length).toFixed(1) : 0,
-            total_steps: data.diary.reduce((s,e)=>s+parseInt(e.steps||0),0)
+        anxiety: {
+            total_logs: data.anxietyLogs.length,
+            sos_sessions: data.sosSessions.length,
+            last_7: data.anxietyLogs.slice(-7)
         },
-        bookings: {
-            total_completed: data.bookings.filter(b=>b.completed).length,
-            warsaw: data.bookings.filter(b=>b.completed && b.city==='warsaw').length,
-            sochaczew: data.bookings.filter(b=>b.completed && b.city==='sochaczew').length,
-            new_clients: data.bookings.filter(b=>b.completed && b.type==='new').length,
-            upcoming: data.bookings.filter(b=>!b.completed).length
+        sleep: {
+            total_logs: data.sleepLogs.length,
+            avg_hours: data.sleepLogs.length>0 ? 
+                (data.sleepLogs.reduce((s,l)=>s+l.hours,0)/data.sleepLogs.length).toFixed(1) : 0,
+            last_7: data.sleepLogs.slice(-7)
         },
-        expenses: {
-            total: data.expenses.reduce((s,e)=>s+e.amount,0),
-            by_category: getCategorySummary()
-        }
+        achievements: {
+            total: data.achievements.length,
+            unlocked: data.achievements.filter(a=>a.unlocked).length,
+            list: data.achievements.filter(a=>a.unlocked).map(a=>a.name)
+        },
+        bookings: data.bookings.filter(b=>b.completed).length
     };
     
     const json = JSON.stringify(report, null, 2);
     navigator.clipboard.writeText(json).then(()=>{
-        alert('📋 Отчет скопирован в буфер!\n\nОтправь его Клоду для анализа.');
+        alert('📋 Отчет скопирован! Отправь Клоду для анализа.');
     }).catch(()=>{
-        prompt('Скопируй этот отчет:', json);
+        prompt('Скопируй отчет:', json);
     });
 }
 
-function getCategorySummary() {
-    const summary = {};
-    data.expenses.forEach(e=>{
-        if(!summary[e.category]) summary[e.category] = 0;
-        summary[e.category] += e.amount;
-    });
-    return summary;
+// ===== UI HELPERS =====
+function switchTab(name) {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+name).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
 }
 
-function getCategoryIcon(cat) {
-    const icons = { rent:'🏠', food:'🍕', transport:'🚌', medicine:'💊', doctor:'👨‍⚕️', debt:'📉', education:'📚', other:'💳' };
-    return icons[cat] || '💳';
-}
-
-function getCategoryName(cat) {
-    const names = { rent:'Аренда', food:'Еда', transport:'Дорога', medicine:'Лекарства', doctor:'Врач', debt:'Долги', education:'Обучение', other:'Другое' };
-    return names[cat] || 'Другое';
-}
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 function formatDate(dateStr) {
     const d = new Date(dateStr);
@@ -546,118 +776,22 @@ function formatDateTime(dateStr) {
     return `${d.getDate()} ${months[d.getMonth()]} ${hours}:${minutes}`;
 }
 
-function calendarDayClick(dateStr) {
-    const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
-    if(dayBookings.length > 0) {
-        const info = dayBookings.map(b=>`${b.time} - ${b.name} (${b.city==='warsaw'?'Варшава':'Сохачев'}) ${b.price?b.price+'zł':''}`).join('\n');
-        alert(`📅 ${formatDate(dateStr)}\n\n${info}`);
-    } else {
-        document.getElementById('bookingDate').value = dateStr;
-        showModal('bookingModal');
-    }
+function getCategoryName(cat) {
+    const names = {
+        rent:'Аренда', food:'Еда', transport:'Дорога', 
+        medicine:'Лекарства', doctor:'Врач', debt:'Долги', 
+        education:'Обучение', other:'Другое'
+    };
+    return names[cat] || 'Другое';
 }
 
-function editBooking(id) {
-    const b = data.bookings.find(x=>x.id===id);
-    if(!b) return;
-    
-    document.getElementById('editBookingId').value = b.id;
-    document.getElementById('editBookingDate').value = b.date;
-    document.getElementById('editBookingTime').value = b.time;
-    document.getElementById('editBookingName').value = b.name;
-    document.getElementById('editBookingCity').value = b.city;
-    document.getElementById('editBookingType').value = b.type;
-    document.getElementById('editBookingPrice').value = b.price || '';
-    document.getElementById('editBookingNotes').value = b.notes || '';
-    
-    showModal('editBookingModal');
+function getLocationName(loc) {
+    const names = {
+        home:'🏠 Дома', warsaw:'🏙️ Варшава', 
+        sochaczew:'🚗 Сохачев', road:'🛣️ В дороге'
+    };
+    return names[loc] || loc;
 }
 
-function saveEditBooking() {
-    const id = parseInt(document.getElementById('editBookingId').value);
-    const b = data.bookings.find(x=>x.id===id);
-    if(!b) return;
-    
-    b.date = document.getElementById('editBookingDate').value;
-    b.time = document.getElementById('editBookingTime').value;
-    b.name = document.getElementById('editBookingName').value;
-    b.city = document.getElementById('editBookingCity').value;
-    b.type = document.getElementById('editBookingType').value;
-    b.price = parseFloat(document.getElementById('editBookingPrice').value) || 0;
-    b.notes = document.getElementById('editBookingNotes').value;
-    
-    save(); render(); closeModal('editBookingModal');
-    alert('✓ Запись обновлена!');
-}
-
-function editTransaction(id) {
-    const t = data.transactions.find(x=>x.id===id);
-    if(!t) return;
-    
-    document.getElementById('editTransactionId').value = t.id;
-    document.getElementById('editTransactionType').value = t.type;
-    document.getElementById('editTransactionAmount').value = t.amount;
-    document.getElementById('editTransactionNote').value = t.description || '';
-    
-    if(t.type === 'expense') {
-        document.getElementById('editTransactionCategory').value = t.category || 'other';
-        document.getElementById('editTransactionCategory').style.display = 'block';
-        document.getElementById('editTransactionCategoryLabel').style.display = 'block';
-    } else {
-        document.getElementById('editTransactionCategory').style.display = 'none';
-        document.getElementById('editTransactionCategoryLabel').style.display = 'none';
-    }
-    
-    showModal('editTransactionModal');
-}
-
-function saveEditTransaction() {
-    const id = parseInt(document.getElementById('editTransactionId').value);
-    const t = data.transactions.find(x=>x.id===id);
-    if(!t) return;
-    
-    const oldAmount = t.amount;
-    const newAmount = parseFloat(document.getElementById('editTransactionAmount').value);
-    
-    if(t.type === 'income') {
-        data.balance = data.balance - oldAmount + newAmount;
-    } else {
-        data.balance = data.balance + oldAmount - newAmount;
-    }
-    
-    t.amount = newAmount;
-    t.description = document.getElementById('editTransactionNote').value;
-    if(t.type === 'expense') {
-        t.category = document.getElementById('editTransactionCategory').value;
-        const expense = data.expenses.find(e=>e.id===id);
-        if(expense) {
-            expense.amount = newAmount;
-            expense.note = t.description;
-            expense.category = t.category;
-        }
-    }
-    
-    save(); render(); closeModal('editTransactionModal');
-    alert('✓ Транзакция обновлена!');
-}
-
-function deleteTransaction() {
-    if(!confirm('Удалить транзакцию?')) return;
-    
-    const id = parseInt(document.getElementById('editTransactionId').value);
-    const t = data.transactions.find(x=>x.id===id);
-    if(!t) return;
-    
-    if(t.type === 'income') {
-        data.balance -= t.amount;
-    } else {
-        data.balance += t.amount;
-        data.expenses = data.expenses.filter(e=>e.id!==id);
-    }
-    
-    data.transactions = data.transactions.filter(x=>x.id!==id);
-    save(); render(); closeModal('editTransactionModal');
-    alert('✓ Транзакция удалена!');
-}
-
+// ===== INIT =====
 window.onload = load;
