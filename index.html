@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Демон-Гайд">
+    <meta name="theme-color" content="#8b0000">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <title>Демон-Гайд 😈</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; }
+        body { font-family: 'Courier New', monospace; background: linear-gradient(135deg, #1a0a0a, #2d1b1b); color: #e0d5c7; }
+        
+        .app { display: flex; flex-direction: column; height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+        
+        .header { background: rgba(20,10,10,0.95); padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top)); border-bottom: 2px solid #8b0000; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .avatar { font-size: 40px; }
+        .user-name { font-size: 18px; color: #ff6666; font-weight: bold; }
+        .user-level { font-size: 11px; color: #999; }
+        .blood { background: rgba(139,0,0,0.3); padding: 8px 16px; border-radius: 20px; border: 2px solid #8b0000; font-weight: bold; }
+        
+        .content { flex: 1; overflow: hidden; position: relative; min-height: 0; }
+        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; padding-bottom: calc(20px + 80px); }
+        .screen.active { display: block; }
+        
+        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,10,10,0.98); border-top: 2px solid #8b0000; padding: 10px 5px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); display: flex; justify-content: space-around; z-index: 1000; }
+        .nav-btn { background: none; border: none; color: #999; cursor: pointer; padding: 8px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 55px; transition: all 0.3s; }
+        .nav-btn.active { background: rgba(139,0,0,0.3); color: #ff6666; }
+        .nav-icon { font-size: 22px; }
+        .nav-label { font-size: 9px; font-weight: bold; }
+        
+        .demon-msg { background: linear-gradient(135deg, rgba(139,0,0,0.3), rgba(220,20,60,0.2)); border: 2px solid #8b0000; border-radius: 15px; padding: 20px; margin-bottom: 20px; position: relative; }
+        .demon-msg::before { content: '😈'; position: absolute; top: -20px; left: 20px; font-size: 40px; background: #1a0a0a; padding: 5px 10px; border-radius: 50%; }
+        .demon-msg p { margin-top: 15px; line-height: 1.6; font-size: 14px; }
+        .demon-msg strong { color: #ff6666; }
+        
+        .section { font-size: 16px; font-weight: bold; color: #ff6666; margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #8b0000; }
+        
+        .card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
+        .card-title { font-size: 15px; font-weight: bold; color: #ff6666; margin-bottom: 6px; }
+        .card-desc { font-size: 13px; color: #ccc; margin-bottom: 6px; }
+        .card-hint { font-size: 11px; color: #999; font-style: italic; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 6px; border-left: 3px solid #8b0000; margin-bottom: 6px; }
+        .card-reward { font-size: 12px; color: #ff9966; font-weight: bold; }
+        
+        .checkbox { width: 22px; height: 22px; border: 2px solid #8b0000; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; flex-shrink: 0; }
+        .checkbox.done { background: #2d7a2d; border-color: #4caf50; }
+        .checkbox.done::after { content: '✓'; color: white; font-weight: bold; font-size: 14px; }
+        
+        .btn { width: 100%; background: linear-gradient(135deg, #8b0000, #dc143c); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin: 8px 0; font-family: 'Courier New', monospace; }
+        .btn:active { transform: scale(0.98); }
+        .btn-small { padding: 10px; font-size: 13px; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+        .modal.show { display: flex; }
+        .modal-box { background: linear-gradient(135deg, #2d1b1b, #1a0a0a); border: 2px solid #8b0000; border-radius: 15px; padding: 20px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; margin: auto; }
+        .modal-box h3 { color: #ff6666; margin-bottom: 15px; text-align: center; font-size: 18px; }
+        .modal-box label { display: block; color: #ff9966; margin: 12px 0 5px; font-size: 13px; font-weight: bold; }
+        .modal-box input, .modal-box textarea, .modal-box select { width: 100%; background: rgba(40,20,20,0.6); border: 2px solid #8b0000; border-radius: 8px; padding: 10px; color: #e0d5c7; font-family: 'Courier New', monospace; font-size: 14px; }
+        .modal-box textarea { resize: vertical; min-height: 60px; }
+        .modal-close { background: #666; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; }
+        
+        .distribute-row { background: rgba(40,20,20,0.6); border: 2px solid #8b0000; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .distribute-name { color: #ff9966; font-size: 13px; font-weight: bold; }
+        .distribute-input { width: 100px; text-align: right; }
+        
+        .finance-big { background: linear-gradient(135deg, rgba(40,20,20,0.8), rgba(50,25,25,0.8)); border: 2px solid #8b0000; border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center; }
+        .finance-label { font-size: 12px; color: #999; text-transform: uppercase; margin-bottom: 8px; }
+        .finance-amount { font-size: 36px; font-weight: bold; color: #66ff66; }
+        
+        .piggy { background: rgba(40,20,20,0.6); border: 2px solid #8b0000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .piggy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .piggy-name { font-size: 13px; font-weight: bold; color: #ff9966; }
+        .piggy-amount { font-size: 13px; color: #66ff66; font-weight: bold; }
+        .progress { width: 100%; height: 6px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; margin-top: 6px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #8b0000, #dc143c); transition: width 0.5s; border-radius: 10px; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .stat { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 12px; padding: 12px; text-align: center; }
+        .stat-label { font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 6px; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #ff6666; }
+        
+        .quest-row { display: flex; align-items: start; gap: 10px; }
+        .quest-info { flex: 1; }
+        
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+        .cal-day { aspect-ratio: 1; background: rgba(40,20,20,0.6); border: 1px solid #8b0000; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; position: relative; }
+        .cal-day.today { border: 2px solid #ff6666; }
+        .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,0,0,0.5), rgba(220,20,60,0.3)); }
+        .cal-day-num { font-weight: bold; }
+        .cal-dot { width: 4px; height: 4px; background: #ff6666; border-radius: 50%; margin-top: 2px; }
+        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 10px; color: #999; font-weight: bold; }
+        
+        .booking-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .booking-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
+        .booking-name { font-size: 15px; font-weight: bold; color: #ff6666; }
+        .booking-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: bold; }
+        .badge-new { background: rgba(76,175,80,0.3); color: #4caf50; border: 1px solid #4caf50; }
+        .badge-return { background: rgba(33,150,243,0.3); color: #2196f3; border: 1px solid #2196f3; }
+        .badge-warsaw { background: rgba(76,175,80,0.3); color: #4caf50; border: 1px solid #4caf50; }
+        .badge-sochaczew { background: rgba(255,152,0,0.3); color: #ff9800; border: 1px solid #ff9800; }
+        .booking-info { font-size: 12px; color: #ccc; margin: 4px 0; }
+        .booking-actions { display: flex; gap: 6px; margin-top: 8px; }
+        .btn-complete { background: linear-gradient(135deg, #2d7a2d, #4caf50); }
+        .btn-delete { background: #dc3545; padding: 8px 12px; }
+        
+        .reward-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .reward-icon { font-size: 32px; }
+        .reward-info { flex: 1; margin: 0 12px; }
+        .reward-name { font-size: 14px; font-weight: bold; color: #ff9966; margin-bottom: 4px; }
+        .reward-price { font-size: 18px; font-weight: bold; color: #66ff66; }
+        .reward-status { font-size: 11px; color: #999; }
+        
+        .btn-row { display: flex; gap: 8px; }
+        .btn-row .btn { margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <div class="avatar">😈</div>
+                <div>
+                    <div class="user-name">Антон</div>
+                    <div class="user-level">Уровень <span id="level">5</span></div>
+                </div>
+            </div>
+            <div class="blood">🩸 <span id="blood">0</span></div>
+        </div>
+        
+        <div class="content">
+            <div class="screen active" id="screen-quests">
+                <div class="demon-msg">
+                    <p><strong>Слушай сюда, творец кожных кошмаров!</strong></p>
+                    <p>Выполняй задания и зарабатывай кровавые очки. Может быть выползешь из Сохачева в Варшаву.</p>
+                </div>
+                <div class="section">⏰ Каждые 4 часа</div>
+                <div id="quests-4h"></div>
+                <div class="section">📅 Ежедневные</div>
+                <div id="quests-daily"></div>
+                <div class="section">📆 Еженедельные</div>
+                <div id="quests-weekly"></div>
+            </div>
+            
+            <div class="screen" id="screen-finance">
+                <div class="demon-msg">
+                    <p><strong>Твои жалкие финансы!</strong></p>
+                    <p>Давай посмотрим сколько ты должен и когда накопишь подушку.</p>
+                </div>
+                <div class="finance-big">
+                    <div class="finance-label">💰 Баланс</div>
+                    <div class="finance-amount"><span id="balance">0</span> zł</div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" onclick="showAddIncome()">💰 Доход</button>
+                    <button class="btn" onclick="showAddExpense()">💸 Расход</button>
+                </div>
+                <div class="section">🏺 Копилки</div>
+                <div id="piggyBanks"></div>
+                <div class="section">📊 Траты за месяц</div>
+                <div id="expenseList"></div>
+            </div>
+            
+            <div class="screen" id="screen-calendar">
+                <div class="demon-msg">
+                    <p><strong>Твоя книга записей!</strong></p>
+                    <p>Отслеживай клиентов и смотри статистику Варшава vs Сохачев.</p>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat"><div class="stat-label">Всего</div><div class="stat-value"><span id="stat-total">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Варшава</div><div class="stat-value"><span id="stat-warsaw">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Сохачев</div><div class="stat-value"><span id="stat-sochaczew">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Новых</div><div class="stat-value"><span id="stat-new">0</span></div></div>
+                </div>
+                <button class="btn" onclick="showAddBooking()">➕ Добавить Запись</button>
+                <div class="section">📅 Календарь</div>
+                <div class="cal-header">
+                    <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+                </div>
+                <div class="calendar" id="calendar"></div>
+                <div class="section">📋 Предстоящие</div>
+                <div id="upcomingBookings"></div>
+                <div class="section">✅ Завершённые</div>
+                <div id="completedBookings"></div>
+            </div>
+            
+            <div class="screen" id="screen-diary">
+                <div class="demon-msg">
+                    <p><strong>Время исповеди, грешник!</strong></p>
+                    <p>Расскажи как прошел день. Я буду анализировать паттерны твоей жалкой жизни.</p>
+                </div>
+                <button class="btn" onclick="showDiary()">📝 Заполнить Дневник</button>
+                <div class="section">📖 Последние Записи</div>
+                <div id="diaryHistory"></div>
+            </div>
+            
+            <div class="screen" id="screen-rewards">
+                <div class="demon-msg">
+                    <p><strong>Твой список желаний!</strong></p>
+                    <p>Я буду подсчитывать когда ты сможешь себе это позволить. Спойлер: нескоро.</p>
+                </div>
+                <button class="btn" onclick="showAddReward()">🎁 Добавить Награду</button>
+                <div class="section">🎁 Мои Награды</div>
+                <div id="rewardsList"></div>
+            </div>
+            
+            <div class="screen" id="screen-stats">
+                <div class="demon-msg">
+                    <p><strong>Статистика твоих страданий!</strong></p>
+                    <p>Цифры не врут, в отличие от тебя.</p>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat"><div class="stat-label">Уровень</div><div class="stat-value"><span id="stat-level">5</span></div></div>
+                    <div class="stat"><div class="stat-label">Кровь</div><div class="stat-value"><span id="stat-blood">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Заданий</div><div class="stat-value"><span id="stat-quests">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Деньги</div><div class="stat-value"><span id="stat-money">0</span></div></div>
+                </div>
+                <div class="section">🎯 Прогресс к Целям</div>
+                <div id="statsGoals"></div>
+                <button class="btn" onclick="exportReport()">📊 Экспорт для Клода</button>
+            </div>
+        </div>
+        
+        <div class="nav">
+            <button class="nav-btn active" onclick="switchTab('quests')">
+                <div class="nav-icon">⚔️</div><div class="nav-label">Задания</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('finance')">
+                <div class="nav-icon">💰</div><div class="nav-label">Финансы</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('calendar')">
+                <div class="nav-icon">📅</div><div class="nav-label">Записи</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('diary')">
+                <div class="nav-icon">📔</div><div class="nav-label">Дневник</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('rewards')">
+                <div class="nav-icon">🎁</div><div class="nav-label">Награды</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('stats')">
+                <div class="nav-icon">📊</div><div class="nav-label">Статы</div>
+            </button>
+        </div>
+    </div>
+    
+    <div class="modal" id="diaryModal">
+        <div class="modal-box">
+            <h3>📔 Дневник за Сегодня</h3>
+            <label>Настроение (1-10): <span id="moodVal">5</span></label>
+            <input type="range" id="mood" min="1" max="10" value="5" oninput="document.getElementById('moodVal').textContent=this.value">
+            <label>Энергия (1-10): <span id="energyVal">5</span></label>
+            <input type="range" id="energy" min="1" max="10" value="5" oninput="document.getElementById('energyVal').textContent=this.value">
+            <label>Тревога (1-10): <span id="anxietyVal">5</span></label>
+            <input type="range" id="anxiety" min="1" max="10" value="5" oninput="document.getElementById('anxietyVal').textContent=this.value">
+            <label>Шаги:</label>
+            <input type="number" id="steps" placeholder="8500">
+            <label>Что сделал сегодня:</label>
+            <textarea id="achievements" rows="3" placeholder="Татуировка, контент..."></textarea>
+            <label>Что было сложно:</label>
+            <textarea id="struggles" rows="3" placeholder="Тревога, усталость..."></textarea>
+            <button class="btn" onclick="saveDiary()">💾 Сохранить (+20 🩸)</button>
+            <button class="modal-close" onclick="closeModal('diaryModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="incomeModal">
+        <div class="modal-box">
+            <h3>💰 Добавить Доход (чистыми)</h3>
+            <label>Чистая Сумма (zł):</label>
+            <input type="number" id="incomeAmount" placeholder="740">
+            <button class="btn" onclick="showDistribution()">→ Распределить по Копилкам</button>
+            <button class="modal-close" onclick="closeModal('incomeModal')">Отмена</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="distributionModal">
+        <div class="modal-box">
+            <h3>🏺 Распредели по Копилкам</h3>
+            <p style="color:#999; font-size:12px; margin-bottom:15px;">Скорректируй суммы под свои купюры:</p>
+            <div id="distributionList"></div>
+            <div style="margin-top:15px; padding:10px; background:rgba(139,0,0,0.2); border-radius:8px; border:1px solid #8b0000;">
+                <div style="display:flex; justify-content:space-between; font-size:13px;">
+                    <span>Всего распределено:</span>
+                    <span id="totalDistributed" style="color:#66ff66; font-weight:bold;">0 zł</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:5px;">
+                    <span>Осталось:</span>
+                    <span id="remaining" style="color:#ff9966; font-weight:bold;">0 zł</span>
+                </div>
+            </div>
+            <button class="btn" onclick="applyDistribution()">✓ Применить Распределение</button>
+            <button class="modal-close" onclick="closeModal('distributionModal')">Отмена</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="expenseModal">
+        <div class="modal-box">
+            <h3>💸 Добавить Расход</h3>
+            <label>Сумма (zł):</label>
+            <input type="number" id="expenseAmount" placeholder="150">
+            <label>Категория:</label>
+            <select id="expenseCategory">
+                <option value="rent">🏠 Аренда</option>
+                <option value="food">🍕 Еда</option>
+                <option value="transport">🚌 Дорога</option>
+                <option value="medicine">💊 Лекарства</option>
+                <option value="doctor">👨‍⚕️ Врач</option>
+                <option value="debt">📉 Долги</option>
+                <option value="education">📚 Обучение</option>
+                <option value="other">💳 Другое</option>
+            </select>
+            <label>Заметка (опционально):</label>
+            <input type="text" id="expenseNote" placeholder="На что потратил">
+            <button class="btn" onclick="addExpense()">💸 Записать Расход</button>
+            <button class="modal-close" onclick="closeModal('expenseModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="bookingModal">
+        <div class="modal-box">
+            <h3>📅 Новая Запись</h3>
+            <label>Дата:</label>
+            <input type="date" id="bookingDate">
+            <label>Время:</label>
+            <input type="time" id="bookingTime" value="12:00">
+            <label>Имя клиента:</label>
+            <input type="text" id="bookingName" placeholder="Анна Ковальская">
+            <label>Город:</label>
+            <select id="bookingCity">
+                <option value="warsaw">🏙️ Варшава</option>
+                <option value="sochaczew">🚗 Сохачев</option>
+            </select>
+            <label>Тип клиента:</label>
+            <select id="bookingType">
+                <option value="new">✨ Новый клиент</option>
+                <option value="return">🔄 Постоянный клиент</option>
+            </select>
+            <label>Примерная цена (zł):</label>
+            <input type="number" id="bookingPrice" placeholder="1200">
+            <label>Заметки:</label>
+            <textarea id="bookingNotes" rows="2" placeholder="Контакт, пожелания..."></textarea>
+            <button class="btn" onclick="addBooking()">📅 Добавить Запись</button>
+            <button class="modal-close" onclick="closeModal('bookingModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="rewardModal">
+        <div class="modal-box">
+            <h3>🎁 Новая Награда</h3>
+            <label>Что хочешь купить:</label>
+            <input type="text" id="rewardName" placeholder="Новая машинка">
+            <label>Цена (zł):</label>
+            <input type="number" id="rewardPrice" placeholder="2000">
+            <label>Эмодзи:</label>
+            <input type="text" id="rewardEmoji" value="🎁" maxlength="2" placeholder="🎁">
+            <button class="btn" onclick="addReward()">🎁 Добавить Награду</button>
+            <button class="modal-close" onclick="closeModal('rewardModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <script src="./app.js"></script>
+</body>
+</html>
