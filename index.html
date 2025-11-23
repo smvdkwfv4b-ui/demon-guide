@@ -25,7 +25,7 @@
         .blood { background: rgba(139,0,0,0.3); padding: 8px 16px; border-radius: 20px; border: 2px solid #8b0000; font-weight: bold; }
         
         .content { flex: 1; overflow: hidden; position: relative; min-height: 0; }
-        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; padding-bottom: calc(20px + 80px); }
+        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; padding-bottom: 100px; }
         .screen.active { display: block; }
         
         .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,10,10,0.98); border-top: 2px solid #8b0000; padding: 10px 5px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); display: flex; justify-content: space-around; z-index: 1000; }
@@ -88,11 +88,12 @@
         .quest-info { flex: 1; }
         
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
-        .cal-day { aspect-ratio: 1; background: rgba(40,20,20,0.6); border: 1px solid #8b0000; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; position: relative; }
+        .cal-day { aspect-ratio: 1; background: rgba(40,20,20,0.6); border: 1px solid #8b0000; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; position: relative; padding: 4px 2px; }
         .cal-day.today { border: 2px solid #ff6666; }
         .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,0,0,0.5), rgba(220,20,60,0.3)); }
         .cal-day-num { font-weight: bold; }
-        .cal-dot { width: 4px; height: 4px; background: #ff6666; border-radius: 50%; margin-top: 2px; }
+        .cal-client-name { font-size: 8px; color: #ff9966; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .cal-client-price { font-size: 8px; color: #66ff66; font-weight: bold; }
         .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 10px; color: #999; font-weight: bold; }
         
         .booking-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
@@ -115,8 +116,21 @@
         .reward-price { font-size: 18px; font-weight: bold; color: #66ff66; }
         .reward-status { font-size: 11px; color: #999; }
         
+        .transaction-card { background: rgba(40,20,20,0.8); border: 2px solid #8b0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .transaction-card.income { border-color: #4caf50; }
+        .transaction-card.expense { border-color: #dc3545; }
+        .transaction-left { flex: 1; }
+        .transaction-type { font-size: 11px; color: #999; text-transform: uppercase; }
+        .transaction-desc { font-size: 13px; color: #e0d5c7; margin: 4px 0; }
+        .transaction-date { font-size: 10px; color: #666; }
+        .transaction-amount { font-size: 18px; font-weight: bold; }
+        .transaction-amount.positive { color: #66ff66; }
+        .transaction-amount.negative { color: #ff6666; }
+        
         .btn-row { display: flex; gap: 8px; }
         .btn-row .btn { margin: 0; }
+        .btn-edit { background: #ff9800; padding: 6px 10px; font-size: 11px; border-radius: 6px; border: none; color: white; cursor: pointer; }
+        .btn-edit:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -161,8 +175,8 @@
                 </div>
                 <div class="section">🏺 Копилки</div>
                 <div id="piggyBanks"></div>
-                <div class="section">📊 Траты за месяц</div>
-                <div id="expenseList"></div>
+                <div class="section">📊 История Транзакций</div>
+                <div id="transactionList"></div>
             </div>
             
             <div class="screen" id="screen-calendar">
@@ -359,6 +373,63 @@
             <input type="text" id="rewardEmoji" value="🎁" maxlength="2" placeholder="🎁">
             <button class="btn" onclick="addReward()">🎁 Добавить Награду</button>
             <button class="modal-close" onclick="closeModal('rewardModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <!-- Edit Booking Modal -->
+    <div class="modal" id="editBookingModal">
+        <div class="modal-box">
+            <h3>✏️ Редактировать Запись</h3>
+            <input type="hidden" id="editBookingId">
+            <label>Дата:</label>
+            <input type="date" id="editBookingDate">
+            <label>Время:</label>
+            <input type="time" id="editBookingTime">
+            <label>Имя клиента:</label>
+            <input type="text" id="editBookingName">
+            <label>Город:</label>
+            <select id="editBookingCity">
+                <option value="warsaw">🏙️ Варшава</option>
+                <option value="sochaczew">🚗 Сохачев</option>
+            </select>
+            <label>Тип клиента:</label>
+            <select id="editBookingType">
+                <option value="new">✨ Новый клиент</option>
+                <option value="return">🔄 Постоянный клиент</option>
+            </select>
+            <label>Цена (zł):</label>
+            <input type="number" id="editBookingPrice">
+            <label>Заметки:</label>
+            <textarea id="editBookingNotes" rows="2"></textarea>
+            <button class="btn" onclick="saveEditBooking()">💾 Сохранить Изменения</button>
+            <button class="modal-close" onclick="closeModal('editBookingModal')">Отмена</button>
+        </div>
+    </div>
+    
+    <!-- Edit Transaction Modal -->
+    <div class="modal" id="editTransactionModal">
+        <div class="modal-box">
+            <h3>✏️ Редактировать Транзакцию</h3>
+            <input type="hidden" id="editTransactionId">
+            <input type="hidden" id="editTransactionType">
+            <label>Сумма (zł):</label>
+            <input type="number" id="editTransactionAmount">
+            <label id="editTransactionCategoryLabel">Категория:</label>
+            <select id="editTransactionCategory">
+                <option value="rent">🏠 Аренда</option>
+                <option value="food">🍕 Еда</option>
+                <option value="transport">🚌 Дорога</option>
+                <option value="medicine">💊 Лекарства</option>
+                <option value="doctor">👨‍⚕️ Врач</option>
+                <option value="debt">📉 Долги</option>
+                <option value="education">📚 Обучение</option>
+                <option value="other">💳 Другое</option>
+            </select>
+            <label>Заметка:</label>
+            <input type="text" id="editTransactionNote">
+            <button class="btn" onclick="saveEditTransaction()">💾 Сохранить Изменения</button>
+            <button class="btn-delete" style="width:100%; margin-top:10px;" onclick="deleteTransaction()">🗑️ Удалить Транзакцию</button>
+            <button class="modal-close" onclick="closeModal('editTransactionModal')">Отмена</button>
         </div>
     </div>
     

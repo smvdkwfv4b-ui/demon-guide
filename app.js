@@ -17,7 +17,7 @@ let data = {
         {id:7,title:'Варшавское Промо',desc:'Таргетированная реклама',hint:'ChatGPT для текста объявления',reward:60,period:'weekly',done:false},
         {id:8,title:'Еженедельный Отчет',desc:'Статистика и отчет',hint:'Для анализа демоном',reward:40,period:'weekly',done:false}
     ],
-    diary: [], bookings: [], expenses: [], rewards: []
+    diary: [], bookings: [], expenses: [], rewards: [], transactions: []
 };
 
 let tempIncome = 0;
@@ -98,14 +98,22 @@ function renderFinance() {
         `;
     }).join('');
     
-    const recent = data.expenses.slice(-10).reverse();
-    document.getElementById('expenseList').innerHTML = recent.length>0 ? recent.map(e=>`
-        <div class="card">
-            <div class="card-title">${getCategoryIcon(e.category)} ${getCategoryName(e.category)}</div>
-            <div class="card-desc">${e.note || ''}</div>
-            <div class="card-reward" style="color:#ff6666">-${e.amount} zł</div>
-        </div>
-    `).join('') : '<div class="card">Пока нет трат</div>';
+    const recent = data.transactions.slice(-15).reverse();
+    document.getElementById('transactionList').innerHTML = recent.length>0 ? recent.map(t=>{
+        const isIncome = t.type === 'income';
+        return `
+            <div class="transaction-card ${isIncome?'income':'expense'}" onclick="editTransaction(${t.id})">
+                <div class="transaction-left">
+                    <div class="transaction-type">${isIncome?'💰 Доход':'💸 Расход'}</div>
+                    <div class="transaction-desc">${t.description || (isIncome?'Доход':getCategoryName(t.category))}</div>
+                    <div class="transaction-date">${formatDateTime(t.date)}</div>
+                </div>
+                <div class="transaction-amount ${isIncome?'positive':'negative'}">
+                    ${isIncome?'+':'-'}${Math.round(t.amount)} zł
+                </div>
+            </div>
+        `;
+    }).join('') : '<div class="card">Пока нет транзакций</div>';
 }
 
 function renderCalendar() {
@@ -123,12 +131,24 @@ function renderCalendar() {
     
     for(let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const hasBooking = data.bookings.some(b => b.date === dateStr);
+        const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
+        const hasBooking = dayBookings.length > 0;
         const isToday = day === today;
+        
+        let clientInfo = '';
+        if(hasBooking && dayBookings[0]) {
+            const b = dayBookings[0];
+            const shortName = b.name.split(' ')[0];
+            clientInfo = `
+                <div class="cal-client-name">${shortName}</div>
+                ${b.price?`<div class="cal-client-price">${b.price}zł</div>`:''}
+            `;
+        }
+        
         html += `
-            <div class="cal-day ${isToday?'today':''} ${hasBooking?'has-booking':''}" onclick="showDayBookings('${dateStr}')">
+            <div class="cal-day ${isToday?'today':''} ${hasBooking?'has-booking':''}" onclick="calendarDayClick('${dateStr}')">
                 <div class="cal-day-num">${day}</div>
-                ${hasBooking?'<div class="cal-dot"></div>':''}
+                ${clientInfo}
             </div>
         `;
     }
@@ -153,8 +173,9 @@ function renderCalendar() {
             ${b.price?`<div class="booking-info">💰 ${b.price} zł</div>`:''}
             ${b.notes?`<div class="booking-info">📝 ${b.notes}</div>`:''}
             <div class="booking-actions">
-                <button class="btn btn-small btn-complete" onclick="completeBooking(${b.id})">✓ Выполнено</button>
-                <button class="btn btn-small btn-delete" onclick="deleteBooking(${b.id})">✕</button>
+                <button class="btn btn-small btn-edit" onclick="event.stopPropagation(); editBooking(${b.id})">✏️ Изменить</button>
+                <button class="btn btn-small btn-complete" onclick="event.stopPropagation(); completeBooking(${b.id})">✓ Готово</button>
+                <button class="btn btn-small btn-delete" onclick="event.stopPropagation(); deleteBooking(${b.id})">✕</button>
             </div>
         </div>
     `).join('') : '<div class="card">Нет предстоящих записей</div>';
@@ -331,6 +352,14 @@ function applyDistribution() {
     });
     
     data.balance += tempIncome;
+    const incomeId = Date.now();
+    data.transactions.push({
+        id: incomeId,
+        type: 'income',
+        amount: tempIncome,
+        description: 'Доход',
+        date: new Date().toISOString()
+    });
     save(); render(); closeModal('distributionModal');
     document.getElementById('incomeAmount').value='';
     alert(`✓ Доход ${Math.round(tempIncome)} zł добавлен и распределен!`);
@@ -345,10 +374,19 @@ function addExpense() {
     if(!amount || amount<=0) return alert('Введи сумму!');
     
     data.balance -= amount;
+    const expenseId = Date.now();
     data.expenses.push({
         amount, category, note,
         date: new Date().toISOString(),
-        id: Date.now()
+        id: expenseId
+    });
+    data.transactions.push({
+        id: expenseId,
+        type: 'expense',
+        amount: amount,
+        category: category,
+        description: note,
+        date: new Date().toISOString()
     });
     save(); render(); closeModal('expenseModal');
     document.getElementById('expenseAmount').value='';
@@ -400,13 +438,6 @@ function deleteBooking(id) {
     if(!confirm('Удалить запись?')) return;
     data.bookings = data.bookings.filter(b=>b.id!==id);
     save(); render();
-}
-
-function showDayBookings(dateStr) {
-    const bookings = data.bookings.filter(b=>b.date===dateStr);
-    if(bookings.length === 0) return alert('Нет записей на этот день');
-    const info = bookings.map(b=>`${b.time} - ${b.name} (${b.city==='warsaw'?'Варшава':'Сохачев'})`).join('\n');
-    alert(`📅 ${formatDate(dateStr)}\n\n${info}`);
 }
 
 function showAddReward() { showModal('rewardModal'); }
@@ -505,6 +536,128 @@ function formatDate(dateStr) {
     const d = new Date(dateStr);
     const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
     return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function formatDateTime(dateStr) {
+    const d = new Date(dateStr);
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${d.getDate()} ${months[d.getMonth()]} ${hours}:${minutes}`;
+}
+
+function calendarDayClick(dateStr) {
+    const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
+    if(dayBookings.length > 0) {
+        const info = dayBookings.map(b=>`${b.time} - ${b.name} (${b.city==='warsaw'?'Варшава':'Сохачев'}) ${b.price?b.price+'zł':''}`).join('\n');
+        alert(`📅 ${formatDate(dateStr)}\n\n${info}`);
+    } else {
+        document.getElementById('bookingDate').value = dateStr;
+        showModal('bookingModal');
+    }
+}
+
+function editBooking(id) {
+    const b = data.bookings.find(x=>x.id===id);
+    if(!b) return;
+    
+    document.getElementById('editBookingId').value = b.id;
+    document.getElementById('editBookingDate').value = b.date;
+    document.getElementById('editBookingTime').value = b.time;
+    document.getElementById('editBookingName').value = b.name;
+    document.getElementById('editBookingCity').value = b.city;
+    document.getElementById('editBookingType').value = b.type;
+    document.getElementById('editBookingPrice').value = b.price || '';
+    document.getElementById('editBookingNotes').value = b.notes || '';
+    
+    showModal('editBookingModal');
+}
+
+function saveEditBooking() {
+    const id = parseInt(document.getElementById('editBookingId').value);
+    const b = data.bookings.find(x=>x.id===id);
+    if(!b) return;
+    
+    b.date = document.getElementById('editBookingDate').value;
+    b.time = document.getElementById('editBookingTime').value;
+    b.name = document.getElementById('editBookingName').value;
+    b.city = document.getElementById('editBookingCity').value;
+    b.type = document.getElementById('editBookingType').value;
+    b.price = parseFloat(document.getElementById('editBookingPrice').value) || 0;
+    b.notes = document.getElementById('editBookingNotes').value;
+    
+    save(); render(); closeModal('editBookingModal');
+    alert('✓ Запись обновлена!');
+}
+
+function editTransaction(id) {
+    const t = data.transactions.find(x=>x.id===id);
+    if(!t) return;
+    
+    document.getElementById('editTransactionId').value = t.id;
+    document.getElementById('editTransactionType').value = t.type;
+    document.getElementById('editTransactionAmount').value = t.amount;
+    document.getElementById('editTransactionNote').value = t.description || '';
+    
+    if(t.type === 'expense') {
+        document.getElementById('editTransactionCategory').value = t.category || 'other';
+        document.getElementById('editTransactionCategory').style.display = 'block';
+        document.getElementById('editTransactionCategoryLabel').style.display = 'block';
+    } else {
+        document.getElementById('editTransactionCategory').style.display = 'none';
+        document.getElementById('editTransactionCategoryLabel').style.display = 'none';
+    }
+    
+    showModal('editTransactionModal');
+}
+
+function saveEditTransaction() {
+    const id = parseInt(document.getElementById('editTransactionId').value);
+    const t = data.transactions.find(x=>x.id===id);
+    if(!t) return;
+    
+    const oldAmount = t.amount;
+    const newAmount = parseFloat(document.getElementById('editTransactionAmount').value);
+    
+    if(t.type === 'income') {
+        data.balance = data.balance - oldAmount + newAmount;
+    } else {
+        data.balance = data.balance + oldAmount - newAmount;
+    }
+    
+    t.amount = newAmount;
+    t.description = document.getElementById('editTransactionNote').value;
+    if(t.type === 'expense') {
+        t.category = document.getElementById('editTransactionCategory').value;
+        const expense = data.expenses.find(e=>e.id===id);
+        if(expense) {
+            expense.amount = newAmount;
+            expense.note = t.description;
+            expense.category = t.category;
+        }
+    }
+    
+    save(); render(); closeModal('editTransactionModal');
+    alert('✓ Транзакция обновлена!');
+}
+
+function deleteTransaction() {
+    if(!confirm('Удалить транзакцию?')) return;
+    
+    const id = parseInt(document.getElementById('editTransactionId').value);
+    const t = data.transactions.find(x=>x.id===id);
+    if(!t) return;
+    
+    if(t.type === 'income') {
+        data.balance -= t.amount;
+    } else {
+        data.balance += t.amount;
+        data.expenses = data.expenses.filter(e=>e.id!==id);
+    }
+    
+    data.transactions = data.transactions.filter(x=>x.id!==id);
+    save(); render(); closeModal('editTransactionModal');
+    alert('✓ Транзакция удалена!');
 }
 
 window.onload = load;
