@@ -598,22 +598,22 @@
         </div>
         
         <div class="nav">
-            <button class="nav-btn active" onclick="switchTab('home')">
+            <button class="nav-btn active" data-tab="home" onclick="switchTab('home')">
                 <div class="nav-icon">🏠</div><div class="nav-label">Главная</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('quests')">
+            <button class="nav-btn" data-tab="quests" onclick="switchTab('quests')">
                 <div class="nav-icon">⚔️</div><div class="nav-label">Квесты</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('calendar')">
+            <button class="nav-btn" data-tab="calendar" onclick="switchTab('calendar')">
                 <div class="nav-icon">📅</div><div class="nav-label">Записи</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('diary')">
+            <button class="nav-btn" data-tab="diary" onclick="switchTab('diary')">
                 <div class="nav-icon">📔</div><div class="nav-label">Дневник</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('finance')">
+            <button class="nav-btn" data-tab="finance" onclick="switchTab('finance')">
                 <div class="nav-icon">💰</div><div class="nav-label">Финансы</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('anxiety')">
+            <button class="nav-btn" data-tab="anxiety" onclick="switchTab('anxiety')">
                 <div class="nav-icon">😰</div><div class="nav-label">Тревога</div>
             </button>
         </div>
@@ -657,7 +657,8 @@
     
     <div class="modal" id="bookingModal">
         <div class="modal-box">
-            <h3>📅 Новая Запись</h3>
+            <h3 id="bookingModalTitle">📅 Новая Запись</h3>
+            <input type="hidden" id="bookingEditId">
             <label>Дата:</label>
             <input type="date" id="bookingDate">
             <label>Время:</label>
@@ -678,7 +679,7 @@
             <input type="number" id="bookingPrice" placeholder="1200">
             <label>Заметки:</label>
             <textarea id="bookingNotes" rows="2" placeholder="Контакт, пожелания..."></textarea>
-            <button class="btn" onclick="addBooking()">📅 Добавить</button>
+            <button class="btn" onclick="saveBooking()">💾 Сохранить</button>
             <button class="btn modal-close" onclick="closeModal('bookingModal')">Закрыть</button>
         </div>
     </div>

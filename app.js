@@ -171,9 +171,18 @@ function renderHome() {
 }
 
 function renderQuests() {
-    ['4h','daily','weekly'].forEach(p => {
+    const periods = {
+        '4h': 'quests-4h',
+        'daily': 'quests-daily', 
+        'weekly': 'quests-weekly'
+    };
+    
+    Object.keys(periods).forEach(p => {
+        const container = document.getElementById(periods[p]);
+        if(!container) return;
+        
         const qs = data.quests.filter(q=>q.period===p);
-        document.getElementById(`quests-${p}`).innerHTML = qs.map(q=>`
+        container.innerHTML = qs.length > 0 ? qs.map(q=>`
             <div class="card">
                 <div class="quest-row">
                     <div class="checkbox ${q.done?'done':''}" onclick="toggleQuest(${q.id})"></div>
@@ -188,7 +197,7 @@ function renderQuests() {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `).join('') : '<div class="card">Нет квестов в этой категории</div>';
     });
 }
 
@@ -246,6 +255,7 @@ function renderCalendar() {
             ${b.notes?`<div class="booking-info">📝 ${b.notes}</div>`:''}
             <div class="btn-row" style="margin-top:8px;">
                 <button class="btn btn-small" style="background:#5a7a5a;" onclick="completeBooking(${b.id})">✓ Готово</button>
+                <button class="btn btn-small" style="background:#666;" onclick="editBooking(${b.id})">✏️</button>
                 <button class="btn btn-small" style="background:#c85050;" onclick="deleteBooking(${b.id})">✕</button>
             </div>
         </div>
@@ -720,7 +730,9 @@ function applyDistribution() {
     data.blood += 20;
     addXP(30);
     
-    save(); render(); closeModal('distributionModal');
+    save(); 
+    closeModal('distributionModal');
+    render(); 
     document.getElementById('incomeAmount').value='';
     alert(`✓ Доход ${Math.round(tempIncome)} zł добавлен! +20 🩸 +30 XP`);
 }
@@ -832,7 +844,14 @@ function switchTab(name) {
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screen-'+name).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    
+    // Find and activate the correct nav button
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        if(btn.getAttribute('data-tab') === name) {
+            btn.classList.add('active');
+        }
+    });
 }
 
 function showModal(id) { document.getElementById(id).classList.add('show'); }
@@ -897,20 +916,54 @@ function saveDiary() {
 function calendarDayClick(dateStr) {
     const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
     if(dayBookings.length > 0) {
-        const info = dayBookings.map(b=>`${b.time} - ${b.name} (${b.city==='warsaw'?'Варшава':'Сохачев'}) ${b.price?b.price+'zł':''}`).join('\n');
-        alert(`📅 ${formatDate(dateStr)}\n\n${info}`);
+        // Show first booking for editing
+        editBooking(dayBookings[0].id);
     } else {
+        // Create new booking for this date
+        document.getElementById('bookingEditId').value = '';
+        document.getElementById('bookingModalTitle').textContent = '📅 Новая Запись';
         document.getElementById('bookingDate').value = dateStr;
+        document.getElementById('bookingTime').value = '12:00';
+        document.getElementById('bookingName').value = '';
+        document.getElementById('bookingCity').value = 'warsaw';
+        document.getElementById('bookingType').value = 'new';
+        document.getElementById('bookingPrice').value = '';
+        document.getElementById('bookingNotes').value = '';
         showModal('bookingModal');
     }
 }
 
 function showAddBooking() {
+    document.getElementById('bookingEditId').value = '';
+    document.getElementById('bookingModalTitle').textContent = '📅 Новая Запись';
     document.getElementById('bookingDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('bookingTime').value = '12:00';
+    document.getElementById('bookingName').value = '';
+    document.getElementById('bookingCity').value = 'warsaw';
+    document.getElementById('bookingType').value = 'new';
+    document.getElementById('bookingPrice').value = '';
+    document.getElementById('bookingNotes').value = '';
     showModal('bookingModal');
 }
 
-function addBooking() {
+function editBooking(id) {
+    const b = data.bookings.find(x=>x.id===id);
+    if(!b) return;
+    
+    document.getElementById('bookingEditId').value = id;
+    document.getElementById('bookingModalTitle').textContent = '✏️ Изменить Запись';
+    document.getElementById('bookingDate').value = b.date;
+    document.getElementById('bookingTime').value = b.time;
+    document.getElementById('bookingName').value = b.name;
+    document.getElementById('bookingCity').value = b.city;
+    document.getElementById('bookingType').value = b.type;
+    document.getElementById('bookingPrice').value = b.price || '';
+    document.getElementById('bookingNotes').value = b.notes || '';
+    showModal('bookingModal');
+}
+
+function saveBooking() {
+    const editId = document.getElementById('bookingEditId').value;
     const date = document.getElementById('bookingDate').value;
     const time = document.getElementById('bookingTime').value;
     const name = document.getElementById('bookingName').value;
@@ -921,14 +974,27 @@ function addBooking() {
     
     if(!date || !name) return alert('Заполни дату и имя!');
     
-    data.bookings.push({
-        id: Date.now(), date, time, name, city, type, price, notes,
-        completed: false, createdAt: new Date().toISOString()
-    });
+    if(editId) {
+        // Edit existing
+        const b = data.bookings.find(x=>x.id==editId);
+        if(b) {
+            b.date = date;
+            b.time = time;
+            b.name = name;
+            b.city = city;
+            b.type = type;
+            b.price = price;
+            b.notes = notes;
+        }
+    } else {
+        // Create new
+        data.bookings.push({
+            id: Date.now(), date, time, name, city, type, price, notes,
+            completed: false, createdAt: new Date().toISOString()
+        });
+    }
+    
     save(); render(); closeModal('bookingModal');
-    document.getElementById('bookingName').value='';
-    document.getElementById('bookingPrice').value='';
-    document.getElementById('bookingNotes').value='';
 }
 
 function completeBooking(id) {
