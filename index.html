@@ -15,16 +15,16 @@
         html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; }
         body { 
             font-family: 'Courier New', monospace; 
-            background: linear-gradient(135deg, #1a1618, #2a2225); 
-            color: #d4c5ba; 
+            background: #1a1a1a;
+            color: #e8e8e8; 
         }
         
-        .app { display: flex; flex-direction: column; height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+        .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; }
         
         .header { 
-            background: rgba(20,16,18,0.95); 
+            background: #0d0d0d;
             padding: 12px 15px; 
-            padding-top: calc(12px + env(safe-area-inset-top)); 
+            padding-top: max(12px, env(safe-area-inset-top)); 
             border-bottom: 2px solid #8b4049; 
             display: flex; 
             justify-content: space-between; 
@@ -33,20 +33,21 @@
         }
         .header-left { display: flex; align-items: center; gap: 10px; }
         .avatar { font-size: 32px; }
-        .user-name { font-size: 15px; color: #d4957d; font-weight: bold; }
-        .user-level { font-size: 10px; color: #888; }
+        .user-name { font-size: 15px; color: #e8b896; font-weight: bold; }
+        .user-level { font-size: 10px; color: #999; }
         .header-stats { display: flex; gap: 8px; }
         .stat-pill { 
-            background: rgba(139,64,73,0.3); 
+            background: rgba(139,64,73,0.4); 
             padding: 6px 12px; 
             border-radius: 15px; 
             border: 1px solid #8b4049; 
             font-size: 11px;
-            font-weight: bold; 
+            font-weight: bold;
+            color: #fff;
         }
         
-        .content { flex: 1; overflow: hidden; position: relative; min-height: 0; }
-        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; padding-bottom: 80px; }
+        .content { flex: 1; overflow: hidden; position: relative; min-height: 0; background: #1a1a1a; }
+        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; padding-bottom: max(80px, calc(80px + env(safe-area-inset-bottom))); }
         .screen.active { display: block; }
         
         .nav { 
@@ -54,10 +55,10 @@
             bottom: 0; 
             left: 0; 
             right: 0; 
-            background: rgba(20,16,18,0.98); 
+            background: #0d0d0d;
             border-top: 2px solid #8b4049; 
             padding: 8px 5px; 
-            padding-bottom: calc(8px + env(safe-area-inset-bottom)); 
+            padding-bottom: max(8px, env(safe-area-inset-bottom)); 
             display: flex; 
             justify-content: space-around; 
             z-index: 1000; 
@@ -65,7 +66,7 @@
         .nav-btn { 
             background: none; 
             border: none; 
-            color: #888; 
+            color: #999; 
             cursor: pointer; 
             padding: 6px; 
             border-radius: 8px; 
@@ -76,24 +77,24 @@
             min-width: 50px; 
             transition: all 0.3s; 
         }
-        .nav-btn.active { background: rgba(139,64,73,0.3); color: #d4957d; }
+        .nav-btn.active { background: rgba(139,64,73,0.4); color: #e8b896; }
         .nav-icon { font-size: 20px; }
         .nav-label { font-size: 8px; font-weight: bold; }
         
         .dashboard-grid { display: grid; gap: 10px; margin-bottom: 12px; }
         .dash-card { 
-            background: rgba(40,32,35,0.8); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 12px; 
             padding: 12px; 
         }
-        .dash-title { font-size: 12px; color: #d4957d; font-weight: bold; margin-bottom: 8px; }
-        .dash-content { font-size: 13px; }
+        .dash-title { font-size: 12px; color: #e8b896; font-weight: bold; margin-bottom: 8px; }
+        .dash-content { font-size: 13px; color: #e8e8e8; }
         
         .xp-bar { 
             width: 100%; 
             height: 8px; 
-            background: rgba(0,0,0,0.5); 
+            background: #0d0d0d;
             border-radius: 10px; 
             overflow: hidden; 
             margin: 6px 0; 
@@ -108,23 +109,23 @@
         .section { 
             font-size: 13px; 
             font-weight: bold; 
-            color: #d4957d; 
+            color: #e8b896; 
             margin: 12px 0 8px; 
             padding-bottom: 5px; 
             border-bottom: 2px solid #8b4049; 
         }
         
         .card { 
-            background: rgba(40,32,35,0.8); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 10px; 
             padding: 10px; 
             margin-bottom: 8px; 
         }
-        .card-title { font-size: 13px; font-weight: bold; color: #d4957d; margin-bottom: 4px; }
-        .card-desc { font-size: 11px; color: #aaa; margin-bottom: 4px; }
-        .card-hint { font-size: 10px; color: #888; font-style: italic; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px; border-left: 2px solid #8b4049; margin-bottom: 4px; }
-        .card-reward { font-size: 11px; color: #d4957d; font-weight: bold; }
+        .card-title { font-size: 13px; font-weight: bold; color: #e8b896; margin-bottom: 4px; }
+        .card-desc { font-size: 11px; color: #bbb; margin-bottom: 4px; }
+        .card-hint { font-size: 10px; color: #999; font-style: italic; padding: 4px; background: rgba(0,0,0,0.5); border-radius: 4px; border-left: 2px solid #8b4049; margin-bottom: 4px; }
+        .card-reward { font-size: 11px; color: #e8b896; font-weight: bold; }
         
         .quest-row { display: flex; align-items: start; gap: 8px; }
         .quest-info { flex: 1; }
@@ -138,7 +139,8 @@
             align-items: center; 
             justify-content: center; 
             transition: all 0.3s; 
-            flex-shrink: 0; 
+            flex-shrink: 0;
+            background: #1a1a1a;
         }
         .checkbox.done { background: #5a7a5a; border-color: #6a9a6a; }
         .checkbox.done::after { content: '✓'; color: white; font-weight: bold; font-size: 12px; }
@@ -147,7 +149,7 @@
             display: inline-flex; 
             align-items: center; 
             gap: 3px; 
-            background: rgba(255,140,0,0.2); 
+            background: rgba(255,140,0,0.3); 
             padding: 2px 6px; 
             border-radius: 8px; 
             font-size: 10px; 
@@ -185,7 +187,7 @@
         }
         .modal.show { display: flex; }
         .modal-box { 
-            background: linear-gradient(135deg, #2a2225, #1a1618); 
+            background: #1a1a1a;
             border: 2px solid #8b4049; 
             border-radius: 12px; 
             padding: 15px; 
@@ -195,15 +197,15 @@
             overflow-y: auto; 
             margin: auto; 
         }
-        .modal-box h3 { color: #d4957d; margin-bottom: 12px; text-align: center; font-size: 16px; }
-        .modal-box label { display: block; color: #d4957d; margin: 10px 0 4px; font-size: 12px; font-weight: bold; }
+        .modal-box h3 { color: #e8b896; margin-bottom: 12px; text-align: center; font-size: 16px; }
+        .modal-box label { display: block; color: #e8b896; margin: 10px 0 4px; font-size: 12px; font-weight: bold; }
         .modal-box input, .modal-box textarea, .modal-box select { 
             width: 100%; 
-            background: rgba(40,32,35,0.6); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 8px; 
             padding: 8px; 
-            color: #d4c5ba; 
+            color: #e8e8e8; 
             font-family: 'Courier New', monospace; 
             font-size: 13px; 
         }
@@ -212,7 +214,7 @@
         
         .sos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .sos-btn { 
-            background: rgba(139,64,73,0.3); 
+            background: rgba(139,64,73,0.4);
             border: 2px solid #8b4049; 
             padding: 15px 10px; 
             border-radius: 10px; 
@@ -220,13 +222,13 @@
             text-align: center; 
             transition: all 0.3s; 
         }
-        .sos-btn:active { transform: scale(0.95); background: rgba(139,64,73,0.5); }
+        .sos-btn:active { transform: scale(0.95); background: rgba(139,64,73,0.6); }
         .sos-icon { font-size: 28px; margin-bottom: 5px; }
-        .sos-title { font-size: 11px; font-weight: bold; color: #d4957d; }
-        .sos-time { font-size: 9px; color: #888; }
+        .sos-title { font-size: 11px; font-weight: bold; color: #e8b896; }
+        .sos-time { font-size: 9px; color: #999; }
         
         .achievement { 
-            background: rgba(40,32,35,0.8); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 10px; 
             padding: 10px; 
@@ -238,23 +240,23 @@
         .achievement.locked { opacity: 0.4; }
         .achievement-icon { font-size: 32px; }
         .achievement-info { flex: 1; }
-        .achievement-name { font-size: 12px; font-weight: bold; color: #d4957d; }
-        .achievement-desc { font-size: 10px; color: #888; }
+        .achievement-name { font-size: 12px; font-weight: bold; color: #e8b896; }
+        .achievement-desc { font-size: 10px; color: #999; }
         
         .progress-box { 
-            background: rgba(40,32,35,0.6); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 10px; 
             padding: 10px; 
             margin-bottom: 8px; 
         }
         .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .progress-name { font-size: 12px; font-weight: bold; color: #d4957d; }
+        .progress-name { font-size: 12px; font-weight: bold; color: #e8b896; }
         .progress-amount { font-size: 12px; color: #9ac99a; font-weight: bold; }
         .progress-bar { 
             width: 100%; 
             height: 6px; 
-            background: rgba(0,0,0,0.5); 
+            background: #0d0d0d;
             border-radius: 10px; 
             overflow: hidden; 
         }
@@ -266,14 +268,14 @@
         }
         
         .sleep-entry { 
-            background: rgba(40,32,35,0.8); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 10px; 
             padding: 10px; 
             margin-bottom: 8px; 
         }
-        .sleep-date { font-size: 12px; font-weight: bold; color: #d4957d; margin-bottom: 4px; }
-        .sleep-info { font-size: 11px; color: #aaa; }
+        .sleep-date { font-size: 12px; font-weight: bold; color: #e8b896; margin-bottom: 4px; }
+        .sleep-info { font-size: 11px; color: #bbb; }
         .sleep-quality { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 10px; }
         .quality-good { background: rgba(154,201,154,0.3); color: #9ac99a; }
         .quality-ok { background: rgba(255,165,0,0.3); color: #ffa500; }
@@ -286,26 +288,93 @@
             padding: 12px; 
             margin-bottom: 10px; 
         }
-        .forecast-title { font-size: 13px; font-weight: bold; color: #d4957d; margin-bottom: 8px; }
+        .forecast-title { font-size: 13px; font-weight: bold; color: #e8b896; margin-bottom: 8px; }
         .forecast-item { 
             display: flex; 
             justify-content: space-between; 
             padding: 5px 0; 
             font-size: 11px; 
-            border-bottom: 1px solid rgba(139,64,73,0.3); 
+            border-bottom: 1px solid rgba(139,64,73,0.3);
+            color: #e8e8e8;
         }
         .forecast-item:last-child { border-bottom: none; }
         
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .stat { 
-            background: rgba(40,32,35,0.8); 
+            background: #2a2a2a;
             border: 2px solid #8b4049; 
             border-radius: 10px; 
             padding: 10px; 
             text-align: center; 
         }
-        .stat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
-        .stat-value { font-size: 22px; font-weight: bold; color: #d4957d; }
+        .stat-label { font-size: 9px; color: #999; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-value { font-size: 22px; font-weight: bold; color: #e8b896; }
+        
+        .cal-day { 
+            aspect-ratio: 1; 
+            background: #2a2a2a;
+            border: 1px solid #8b4049; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 10px; 
+            cursor: pointer; 
+            position: relative; 
+            padding: 3px 2px; 
+            color: #e8e8e8;
+        }
+        .cal-day.today { border: 2px solid #e8b896; background: rgba(232,184,150,0.1); }
+        .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,64,73,0.6), rgba(160,82,92,0.4)); }
+        .cal-day-num { font-weight: bold; }
+        .cal-client-name { font-size: 7px; color: #e8b896; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .cal-client-price { font-size: 7px; color: #9ac99a; font-weight: bold; }
+        
+        .booking-card { 
+            background: #2a2a2a;
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+        }
+        .booking-name { font-size: 13px; font-weight: bold; color: #e8b896; margin-bottom: 4px; }
+        .booking-info { font-size: 11px; color: #bbb; margin: 3px 0; }
+        .booking-badge { 
+            display: inline-block; 
+            font-size: 9px; 
+            padding: 2px 6px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            margin-right: 4px; 
+        }
+        .badge-new { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
+        .badge-return { background: rgba(100,149,237,0.3); color: #6495ed; border: 1px solid #6495ed; }
+        .badge-warsaw { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
+        .badge-sochaczew { background: rgba(255,140,0,0.3); color: #ff8c00; border: 1px solid #ff8c00; }
+        
+        .insight-box { 
+            background: rgba(139,64,73,0.2); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+        }
+        .insight-icon { font-size: 24px; margin-bottom: 5px; }
+        .insight-text { font-size: 12px; line-height: 1.5; color: #e8e8e8; }
+        
+        .slider-container { margin: 8px 0; }
+        .slider-label { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 11px; 
+            margin-bottom: 4px;
+            color: #e8e8e8;
+        }
+        .slider { width: 100%; }
+        
+        .btn-row { display: flex; gap: 6px; }
+        .btn-row .btn { margin: 0; }
         
         .cal-day { 
             aspect-ratio: 1; 
