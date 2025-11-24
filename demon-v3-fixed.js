@@ -969,6 +969,8 @@ function exportReport() {
 
 // ===== UI HELPERS =====
 function switchTab(name) {
+    console.log('Switching to tab:', name);
+    
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screen-'+name).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -980,6 +982,15 @@ function switchTab(name) {
             btn.classList.add('active');
         }
     });
+    
+    // Force re-render for specific tabs to ensure content is displayed
+    if(name === 'quests') {
+        console.log('Force rendering quests...');
+        renderQuests();
+    } else if(name === 'finance') {
+        console.log('Force rendering finance...');
+        renderFinance();
+    }
 }
 
 function showModal(id) { document.getElementById(id).classList.add('show'); }
@@ -1148,4 +1159,18 @@ function deleteBooking(id) {
 }
 
 // ===== INIT =====
-window.onload = load;
+window.onload = function() {
+    console.log('=== APP STARTING ===');
+    console.log('DOM loaded, initializing...');
+    
+    load();
+    
+    console.log('Checking if containers exist:');
+    console.log('quests-4h:', document.getElementById('quests-4h') ? 'YES' : 'NO');
+    console.log('quests-daily:', document.getElementById('quests-daily') ? 'YES' : 'NO');
+    console.log('quests-weekly:', document.getElementById('quests-weekly') ? 'YES' : 'NO');
+    console.log('piggyBanks:', document.getElementById('piggyBanks') ? 'YES' : 'NO');
+    console.log('transactionList:', document.getElementById('transactionList') ? 'YES' : 'NO');
+    
+    console.log('=== APP STARTED ===');
+};
