@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Демон-Гайд</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #e8e8e8; }
+        .test { margin: 20px 0; padding: 15px; background: #2a2a2a; border: 2px solid #8b4049; border-radius: 10px; }
+        .pass { border-color: #5a7a5a; }
+        .fail { border-color: #c85050; }
+        h2 { color: #e8b896; }
+        .result { margin: 5px 0; font-size: 14px; }
+        button { padding: 10px 20px; background: #8b4049; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Демон-Гайд - Диагностика</h1>
+    
+    <div class="test" id="test1">
+        <h2>1. Проверка LocalStorage</h2>
+        <div class="result" id="result1">Проверяю...</div>
+    </div>
+    
+    <div class="test" id="test2">
+        <h2>2. Проверка данных</h2>
+        <div class="result" id="result2">Проверяю...</div>
+    </div>
+    
+    <div class="test" id="test3">
+        <h2>3. Проверка квестов</h2>
+        <div class="result" id="result3">Проверяю...</div>
+    </div>
+    
+    <div class="test" id="test4">
+        <h2>4. Проверка финансов</h2>
+        <div class="result" id="result4">Проверяю...</div>
+    </div>
+    
+    <div class="test">
+        <h2>⚙️ Действия</h2>
+        <button onclick="showData()">Показать данные</button>
+        <button onclick="resetAll()">Сбросить всё</button>
+        <button onclick="createDefault()">Создать дефолт</button>
+    </div>
+    
+    <div class="test">
+        <h2>📊 Вывод данных:</h2>
+        <pre id="dataOutput" style="color:#9ac99a; font-size:12px; overflow:auto;"></pre>
+    </div>
+    
+    <script>
+        // Test 1: LocalStorage
+        try {
+            localStorage.setItem('test', 'ok');
+            const val = localStorage.getItem('test');
+            if(val === 'ok') {
+                document.getElementById('result1').innerHTML = '✅ LocalStorage работает';
+                document.getElementById('test1').classList.add('pass');
+            } else {
+                throw new Error('Read failed');
+            }
+        } catch(e) {
+            document.getElementById('result1').innerHTML = '❌ LocalStorage НЕ работает: ' + e.message;
+            document.getElementById('test1').classList.add('fail');
+        }
+        
+        // Test 2: Data exists
+        const saved = localStorage.getItem('demonDataV3');
+        if(saved) {
+            try {
+                const data = JSON.parse(saved);
+                document.getElementById('result2').innerHTML = '✅ Данные найдены: ' + (saved.length / 1024).toFixed(1) + ' KB';
+                document.getElementById('test2').classList.add('pass');
+            } catch(e) {
+                document.getElementById('result2').innerHTML = '❌ Данные повреждены: ' + e.message;
+                document.getElementById('test2').classList.add('fail');
+            }
+        } else {
+            document.getElementById('result2').innerHTML = '⚠️ Данных нет (первый запуск?)';
+        }
+        
+        // Test 3: Quests
+        if(saved) {
+            const data = JSON.parse(saved);
+            if(data.quests && data.quests.length > 0) {
+                document.getElementById('result3').innerHTML = `✅ Квесты: ${data.quests.length} шт.`;
+                document.getElementById('test3').classList.add('pass');
+            } else {
+                document.getElementById('result3').innerHTML = '❌ Квестов нет!';
+                document.getElementById('test3').classList.add('fail');
+            }
+        } else {
+            document.getElementById('result3').innerHTML = '⚠️ Нет данных';
+        }
+        
+        // Test 4: Finance
+        if(saved) {
+            const data = JSON.parse(saved);
+            if(data.piggyBanks && data.piggyBanks.length > 0) {
+                document.getElementById('result4').innerHTML = `✅ Копилки: ${data.piggyBanks.length} шт., Баланс: ${data.balance} zł`;
+                document.getElementById('test4').classList.add('pass');
+            } else {
+                document.getElementById('result4').innerHTML = '❌ Копилок нет!';
+                document.getElementById('test4').classList.add('fail');
+            }
+        } else {
+            document.getElementById('result4').innerHTML = '⚠️ Нет данных';
+        }
+        
+        function showData() {
+            const saved = localStorage.getItem('demonDataV3');
+            if(saved) {
+                const data = JSON.parse(saved);
+                document.getElementById('dataOutput').textContent = JSON.stringify(data, null, 2);
+            } else {
+                document.getElementById('dataOutput').textContent = 'Данных нет';
+            }
+        }
+        
+        function resetAll() {
+            if(confirm('Удалить ВСЕ данные?')) {
+                localStorage.removeItem('demonDataV3');
+                alert('Данные удалены! Перезагрузи страницу.');
+                location.reload();
+            }
+        }
+        
+        function createDefault() {
+            const defaultData = {
+                level: 5,
+                xp: 0,
+                blood: 0,
+                balance: 0,
+                quests: [
+                    {id:1,title:'Проверь Сообщения',desc:'Instagram и SMS',hint:'Быстрый ответ = больше клиентов',reward:10,xp:15,period:'4h',done:false,streak:0},
+                    {id:2,title:'Пост о Датах',desc:'Сторис о свободных',hint:'Шаблон',reward:15,xp:20,period:'4h',done:false,streak:0},
+                    {id:3,title:'Практика Рисунка',desc:'2+ часа эскизов',hint:'Кинжалы и мечи',reward:30,xp:50,period:'daily',done:false,streak:0}
+                ],
+                piggyBanks: [
+                    {id:'cushion', name:'Финподушка', amount:0, goal:5000},
+                    {id:'rent', name:'Аренда', amount:0, goal:3000}
+                ],
+                transactions: [],
+                bookings: [],
+                diary: [],
+                anxietyLogs: [],
+                sleepLogs: [],
+                achievements: []
+            };
+            
+            localStorage.setItem('demonDataV3', JSON.stringify(defaultData));
+            alert('Дефолтные данные созданы! Перезагрузи страницу.');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
