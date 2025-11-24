@@ -1,806 +1,1023 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Демон-Гайд">
-    <meta name="theme-color" content="#8b4049">
-    <link rel="manifest" href="./manifest.json">
-    <link rel="apple-touch-icon" href="./icon-192.png">
-    <title>Демон-Гайд 😈</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; }
-        body { 
-            font-family: 'Courier New', monospace; 
-            background: #1a1a1a;
-            color: #e8e8e8; 
+// ===== DATA STRUCTURE =====
+let data = {
+    // RPG System
+    level: 5,
+    xp: 0,
+    blood: 0,
+    
+    // Finances
+    balance: 0,
+    piggyBanks: [
+        {id:'cushion', name:'Финподушка', amount:0, goal:5000},
+        {id:'rent', name:'Аренда', amount:0, goal:3000},
+        {id:'debt', name:'Долги', amount:0, goal:0},
+        {id:'teeth', name:'Зубы', amount:0, goal:3000},
+        {id:'drawing', name:'Рисунок', amount:0, goal:800}
+    ],
+    transactions: [],
+    
+    // Quests with streaks
+    quests: [
+        {id:1,title:'Проверь Сообщения',desc:'Instagram и SMS',hint:'Быстрый ответ = больше клиентов',reward:10,xp:15,period:'4h',done:false,streak:0,lastDone:null},
+        {id:2,title:'Пост о Датах',desc:'Сторис о свободных',hint:'Шаблон: "Свободные даты..."',reward:15,xp:20,period:'4h',done:false,streak:0,lastDone:null},
+        {id:3,title:'Практика Рисунка',desc:'2+ часа эскизов',hint:'Тема: Кинжалы и мечи',reward:30,xp:50,period:'daily',done:false,streak:0,lastDone:null},
+        {id:4,title:'AI Эксперименты',desc:'5 референсов',hint:'Stable Diffusion',reward:20,xp:30,period:'daily',done:false,streak:0,lastDone:null},
+        {id:5,title:'Час Продвижения',desc:'1 час соцсети',hint:'Варшавское комьюнити',reward:25,xp:35,period:'daily',done:false,streak:0,lastDone:null},
+        {id:6,title:'Обнови Портфолио',desc:'3 работы Instagram',hint:'Хорошие фото = записи',reward:50,xp:80,period:'weekly',done:false,streak:0,lastDone:null},
+        {id:7,title:'Варшавское Промо',desc:'Таргетированная реклама',hint:'ChatGPT для текста',reward:60,xp:100,period:'weekly',done:false,streak:0,lastDone:null},
+        {id:8,title:'Еженедельный Отчет',desc:'Статистика',hint:'Для анализа демоном',reward:40,xp:70,period:'weekly',done:false,streak:0,lastDone:null}
+    ],
+    
+    // Anxiety tracking
+    anxietyLogs: [],
+    sosSessions: [],
+    
+    // Sleep tracking
+    sleepLogs: [],
+    
+    // Diary
+    diary: [],
+    
+    // Bookings/Calendar
+    bookings: [],
+    
+    // Achievements
+    achievements: [
+        // Financial
+        {id:'first_1k',name:'Первая 1000',desc:'1000 zł в финподушке',icon:'💰',unlocked:false,category:'finance'},
+        {id:'rent_3x',name:'Стабильная Аренда',desc:'3 раза оплатил вовремя',icon:'🏠',unlocked:false,category:'finance'},
+        {id:'debt_500',name:'Минус Долги',desc:'Выплатил 500 по долгам',icon:'📉',unlocked:false,category:'finance'},
+        {id:'green_week',name:'Зелёная Неделя',desc:'Неделя без "красного"',icon:'💚',unlocked:false,category:'finance'},
+        
+        // Professional
+        {id:'portfolio_10',name:'10 Работ',desc:'10 работ в портфолио',icon:'🎨',unlocked:false,category:'pro'},
+        {id:'warsaw_first',name:'Варшавский Дебют',desc:'Первый клиент Варшава',icon:'🏙️',unlocked:false,category:'pro'},
+        {id:'warsaw_5x',name:'Варшава x5',desc:'5 клиентов подряд',icon:'🔥',unlocked:false,category:'pro'},
+        {id:'original_design',name:'Авторский Дизайн',desc:'Реализован без коллажа',icon:'✨',unlocked:false,category:'pro'},
+        
+        // Health
+        {id:'sleep_7d',name:'Неделя Сна',desc:'7 дней по 7+ часов',icon:'😴',unlocked:false,category:'health'},
+        {id:'anxiety_low',name:'Спокойствие',desc:'Неделя тревоги <5',icon:'🧘',unlocked:false,category:'health'},
+        {id:'diary_30d',name:'Месяц Дневника',desc:'30 дней заполнения',icon:'📔',unlocked:false,category:'health'},
+        {id:'therapy_10',name:'Терапия x10',desc:'10 сессий психолога',icon:'💬',unlocked:false,category:'health'}
+    ],
+    
+    bookings: [],
+    rewards: []
+};
+
+let tempIncome = 0;
+let tempDistribution = {};
+let currentSOSType = '';
+
+// ===== INIT =====
+function load() {
+    const saved = localStorage.getItem('demonDataV3');
+    if (saved) {
+        try { 
+            const loaded = JSON.parse(saved);
+            data = {...data, ...loaded};
+        }
+        catch(e) { console.error('Load failed'); }
+    }
+    render();
+}
+
+function save() {
+    localStorage.setItem('demonDataV3', JSON.stringify(data));
+}
+
+// ===== XP & LEVEL SYSTEM =====
+function getXPForLevel(lvl) {
+    return 100 + (lvl - 1) * 50; // Level 1: 100, Level 2: 150, etc
+}
+
+function addXP(amount) {
+    data.xp += amount;
+    const needed = getXPForLevel(data.level);
+    
+    while(data.xp >= needed) {
+        data.xp -= needed;
+        data.level++;
+        alert(`🎉 LEVEL UP! Теперь уровень ${data.level}!`);
+    }
+    save();
+}
+
+// ===== RENDER =====
+function render() {
+    renderHome();
+    renderQuests();
+    renderCalendar();
+    renderDiary();
+    renderAnxiety();
+    renderFinance();
+    renderSleep();
+    renderAchievements();
+    
+    // Update header
+    document.getElementById('level').textContent = data.level;
+    document.getElementById('xp').textContent = data.xp;
+    document.getElementById('blood').textContent = data.blood;
+}
+
+function renderHome() {
+    // XP Bar
+    const needed = getXPForLevel(data.level);
+    const pct = (data.xp / needed * 100).toFixed(0);
+    document.getElementById('xpBar').style.width = pct + '%';
+    document.getElementById('xpCurrent').textContent = data.xp;
+    document.getElementById('xpNeeded').textContent = needed;
+    document.getElementById('nextLevel').textContent = data.level + 1;
+    
+    // Finance
+    document.getElementById('homeBalance').textContent = Math.round(data.balance);
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
+    const toGoal = Math.max(0, cushion.goal - cushion.amount);
+    document.getElementById('homeToGoal').textContent = Math.round(toGoal);
+    const cushionPct = (cushion.amount / cushion.goal * 100).toFixed(0);
+    document.getElementById('homeCushionProgress').style.width = cushionPct + '%';
+    
+    // Today's quests
+    const today = data.quests.filter(q=>!q.done).slice(0,3);
+    document.getElementById('todayQuests').innerHTML = today.length > 0 ? today.map(q=>`
+        <div class="card">
+            <div class="quest-row">
+                <div class="checkbox ${q.done?'done':''}" onclick="toggleQuest(${q.id})"></div>
+                <div class="quest-info">
+                    <div class="card-title">${q.title} ${q.streak>0?`<span class="streak">🔥 ${q.streak}</span>`:''}</div>
+                    <div class="card-desc">${q.desc}</div>
+                    <div class="card-reward">+${q.reward} 🩸 +${q.xp} XP</div>
+                </div>
+            </div>
+        </div>
+    `).join('') : '<div class="card">Все квесты выполнены! 🎉</div>';
+    
+    // Bookings
+    const todayStr = new Date().toISOString().split('T')[0];
+    const upcoming = data.bookings.filter(b=>!b.completed && b.date>=todayStr).slice(0,2);
+    document.getElementById('homeBookings').innerHTML = upcoming.length>0 ? upcoming.map(b=>`
+        <div class="card">
+            <div class="card-title">${b.name}</div>
+            <div class="card-desc">📅 ${formatDate(b.date)} в ${b.time} • ${b.city==='warsaw'?'🏙️ Варшава':'🚗 Сохачев'}</div>
+            ${b.price?`<div style="font-size:12px; color:#9ac99a; font-weight:bold;">💰 ${b.price} zł</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Нет записей на неделе</div>';
+    
+    // Anxiety
+    const todayAnxiety = data.anxietyLogs.filter(l=>l.date===todayStr);
+    const lastAnxiety = todayAnxiety.length > 0 ? todayAnxiety[todayAnxiety.length-1].before : null;
+    document.getElementById('homeAnxiety').innerHTML = lastAnxiety ? `${lastAnxiety}/10` : '-/10';
+}
+
+function renderQuests() {
+    const periods = {
+        '4h': 'quests-4h',
+        'daily': 'quests-daily', 
+        'weekly': 'quests-weekly'
+    };
+    
+    Object.keys(periods).forEach(p => {
+        const container = document.getElementById(periods[p]);
+        if(!container) return;
+        
+        const qs = data.quests.filter(q=>q.period===p);
+        container.innerHTML = qs.length > 0 ? qs.map(q=>`
+            <div class="card">
+                <div class="quest-row">
+                    <div class="checkbox ${q.done?'done':''}" onclick="toggleQuest(${q.id})"></div>
+                    <div class="quest-info">
+                        <div class="card-title">
+                            ${q.title} 
+                            ${q.streak>0?`<span class="streak">🔥 ${q.streak}</span>`:''}
+                        </div>
+                        <div class="card-desc">${q.desc}</div>
+                        <div class="card-hint">💡 ${q.hint}</div>
+                        <div class="card-reward">+${q.reward} 🩸 +${q.xp} XP</div>
+                    </div>
+                </div>
+            </div>
+        `).join('') : '<div class="card">Нет квестов в этой категории</div>';
+    });
+}
+
+function renderCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startDay = firstDay === 0 ? 6 : firstDay - 1;
+    
+    let html = '';
+    for(let i = 0; i < startDay; i++) html += '<div class="cal-day"></div>';
+    
+    for(let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
+        const hasBooking = dayBookings.length > 0;
+        const isToday = day === today;
+        
+        let clientInfo = '';
+        if(hasBooking && dayBookings[0]) {
+            const b = dayBookings[0];
+            const shortName = b.name.split(' ')[0];
+            clientInfo = `
+                <div class="cal-client-name">${shortName}</div>
+                ${b.price?`<div class="cal-client-price">${b.price}zł</div>`:''}
+            `;
         }
         
-        .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; }
-        
-        .header { 
-            background: #0d0d0d;
-            padding: 12px 15px; 
-            padding-top: max(12px, env(safe-area-inset-top)); 
-            border-bottom: 2px solid #8b4049; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            flex-shrink: 0; 
-        }
-        .header-left { display: flex; align-items: center; gap: 10px; }
-        .avatar { font-size: 32px; }
-        .user-name { font-size: 15px; color: #e8b896; font-weight: bold; }
-        .user-level { font-size: 10px; color: #999; }
-        .header-stats { display: flex; gap: 8px; }
-        .stat-pill { 
-            background: rgba(139,64,73,0.4); 
-            padding: 6px 12px; 
-            border-radius: 15px; 
-            border: 1px solid #8b4049; 
-            font-size: 11px;
-            font-weight: bold;
-            color: #fff;
-        }
-        
-        .content { flex: 1; overflow: hidden; position: relative; min-height: 0; background: #1a1a1a; }
-        .screen { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; padding-bottom: max(80px, calc(80px + env(safe-area-inset-bottom))); }
-        .screen.active { display: block; }
-        
-        .nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            background: #0d0d0d;
-            border-top: 2px solid #8b4049; 
-            padding: 8px 5px; 
-            padding-bottom: max(8px, env(safe-area-inset-bottom)); 
-            display: flex; 
-            justify-content: space-around; 
-            z-index: 1000; 
-        }
-        .nav-btn { 
-            background: none; 
-            border: none; 
-            color: #999; 
-            cursor: pointer; 
-            padding: 6px; 
-            border-radius: 8px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 3px; 
-            min-width: 50px; 
-            transition: all 0.3s; 
-        }
-        .nav-btn.active { background: rgba(139,64,73,0.4); color: #e8b896; }
-        .nav-icon { font-size: 20px; }
-        .nav-label { font-size: 8px; font-weight: bold; }
-        
-        .dashboard-grid { display: grid; gap: 10px; margin-bottom: 12px; }
-        .dash-card { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 12px; 
-            padding: 12px; 
-        }
-        .dash-title { font-size: 12px; color: #e8b896; font-weight: bold; margin-bottom: 8px; }
-        .dash-content { font-size: 13px; color: #e8e8e8; }
-        
-        .xp-bar { 
-            width: 100%; 
-            height: 8px; 
-            background: #0d0d0d;
-            border-radius: 10px; 
-            overflow: hidden; 
-            margin: 6px 0; 
-        }
-        .xp-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #8b4049, #a0525c); 
-            transition: width 0.5s; 
-            border-radius: 10px; 
-        }
-        
-        .section { 
-            font-size: 13px; 
-            font-weight: bold; 
-            color: #e8b896; 
-            margin: 12px 0 8px; 
-            padding-bottom: 5px; 
-            border-bottom: 2px solid #8b4049; 
-        }
-        
-        .card { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            margin-bottom: 8px; 
-        }
-        .card-title { font-size: 13px; font-weight: bold; color: #e8b896; margin-bottom: 4px; }
-        .card-desc { font-size: 11px; color: #bbb; margin-bottom: 4px; }
-        .card-hint { font-size: 10px; color: #999; font-style: italic; padding: 4px; background: rgba(0,0,0,0.5); border-radius: 4px; border-left: 2px solid #8b4049; margin-bottom: 4px; }
-        .card-reward { font-size: 11px; color: #e8b896; font-weight: bold; }
-        
-        .quest-row { display: flex; align-items: start; gap: 8px; }
-        .quest-info { flex: 1; }
-        .checkbox { 
-            width: 20px; 
-            height: 20px; 
-            border: 2px solid #8b4049; 
-            border-radius: 50%; 
-            cursor: pointer; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            transition: all 0.3s; 
-            flex-shrink: 0;
-            background: #1a1a1a;
-        }
-        .checkbox.done { background: #5a7a5a; border-color: #6a9a6a; }
-        .checkbox.done::after { content: '✓'; color: white; font-weight: bold; font-size: 12px; }
-        
-        .streak { 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 3px; 
-            background: rgba(255,140,0,0.3); 
-            padding: 2px 6px; 
-            border-radius: 8px; 
-            font-size: 10px; 
-            color: #ff8c00; 
-            border: 1px solid #ff8c00; 
-        }
-        
-        .btn { 
-            width: 100%; 
-            background: linear-gradient(135deg, #8b4049, #a0525c); 
-            color: white; 
-            border: none; 
-            padding: 10px; 
-            border-radius: 10px; 
-            font-size: 13px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin: 5px 0; 
-            font-family: 'Courier New', monospace; 
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn-small { padding: 7px; font-size: 11px; }
-        .btn-secondary { background: #666; }
-        
-        .modal { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,0.95); 
-            z-index: 2000; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 15px; 
-            overflow-y: auto; 
-        }
-        .modal.show { display: flex; }
-        .modal-box { 
-            background: #1a1a1a;
-            border: 2px solid #8b4049; 
-            border-radius: 12px; 
-            padding: 15px; 
-            max-width: 500px; 
-            width: 100%; 
-            max-height: 85vh; 
-            overflow-y: auto; 
-            margin: auto; 
-        }
-        .modal-box h3 { color: #e8b896; margin-bottom: 12px; text-align: center; font-size: 16px; }
-        .modal-box label { display: block; color: #e8b896; margin: 10px 0 4px; font-size: 12px; font-weight: bold; }
-        .modal-box input, .modal-box textarea, .modal-box select { 
-            width: 100%; 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 8px; 
-            padding: 8px; 
-            color: #e8e8e8; 
-            font-family: 'Courier New', monospace; 
-            font-size: 13px; 
-        }
-        .modal-box textarea { resize: vertical; min-height: 50px; }
-        .modal-close { background: #555; }
-        
-        .sos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .sos-btn { 
-            background: rgba(139,64,73,0.4);
-            border: 2px solid #8b4049; 
-            padding: 15px 10px; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            text-align: center; 
-            transition: all 0.3s; 
-        }
-        .sos-btn:active { transform: scale(0.95); background: rgba(139,64,73,0.6); }
-        .sos-icon { font-size: 28px; margin-bottom: 5px; }
-        .sos-title { font-size: 11px; font-weight: bold; color: #e8b896; }
-        .sos-time { font-size: 9px; color: #999; }
-        
-        .achievement { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            margin-bottom: 8px; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-        }
-        .achievement.locked { opacity: 0.4; }
-        .achievement-icon { font-size: 32px; }
-        .achievement-info { flex: 1; }
-        .achievement-name { font-size: 12px; font-weight: bold; color: #e8b896; }
-        .achievement-desc { font-size: 10px; color: #999; }
-        
-        .progress-box { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            margin-bottom: 8px; 
-        }
-        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .progress-name { font-size: 12px; font-weight: bold; color: #e8b896; }
-        .progress-amount { font-size: 12px; color: #9ac99a; font-weight: bold; }
-        .progress-bar { 
-            width: 100%; 
-            height: 6px; 
-            background: #0d0d0d;
-            border-radius: 10px; 
-            overflow: hidden; 
-        }
-        .progress-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #8b4049, #a0525c); 
-            transition: width 0.5s; 
-            border-radius: 10px; 
-        }
-        
-        .sleep-entry { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            margin-bottom: 8px; 
-        }
-        .sleep-date { font-size: 12px; font-weight: bold; color: #e8b896; margin-bottom: 4px; }
-        .sleep-info { font-size: 11px; color: #bbb; }
-        .sleep-quality { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 10px; }
-        .quality-good { background: rgba(154,201,154,0.3); color: #9ac99a; }
-        .quality-ok { background: rgba(255,165,0,0.3); color: #ffa500; }
-        .quality-bad { background: rgba(200,80,80,0.3); color: #c85050; }
-        
-        .forecast-box { 
-            background: rgba(139,64,73,0.2); 
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 12px; 
-            margin-bottom: 10px; 
-        }
-        .forecast-title { font-size: 13px; font-weight: bold; color: #e8b896; margin-bottom: 8px; }
-        .forecast-item { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 5px 0; 
-            font-size: 11px; 
-            border-bottom: 1px solid rgba(139,64,73,0.3);
-            color: #e8e8e8;
-        }
-        .forecast-item:last-child { border-bottom: none; }
-        
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .stat { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            text-align: center; 
-        }
-        .stat-label { font-size: 9px; color: #999; text-transform: uppercase; margin-bottom: 4px; }
-        .stat-value { font-size: 22px; font-weight: bold; color: #e8b896; }
-        
-        .cal-day { 
-            aspect-ratio: 1; 
-            background: #2a2a2a;
-            border: 1px solid #8b4049; 
-            border-radius: 6px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 10px; 
-            cursor: pointer; 
-            position: relative; 
-            padding: 3px 2px; 
-            color: #e8e8e8;
-        }
-        .cal-day.today { border: 2px solid #e8b896; background: rgba(232,184,150,0.1); }
-        .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,64,73,0.6), rgba(160,82,92,0.4)); }
-        .cal-day-num { font-weight: bold; }
-        .cal-client-name { font-size: 7px; color: #e8b896; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .cal-client-price { font-size: 7px; color: #9ac99a; font-weight: bold; }
-        
-        .booking-card { 
-            background: #2a2a2a;
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            margin-bottom: 8px; 
-        }
-        .booking-name { font-size: 13px; font-weight: bold; color: #e8b896; margin-bottom: 4px; }
-        .booking-info { font-size: 11px; color: #bbb; margin: 3px 0; }
-        .booking-badge { 
-            display: inline-block; 
-            font-size: 9px; 
-            padding: 2px 6px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            margin-right: 4px; 
-        }
-        .badge-new { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
-        .badge-return { background: rgba(100,149,237,0.3); color: #6495ed; border: 1px solid #6495ed; }
-        .badge-warsaw { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
-        .badge-sochaczew { background: rgba(255,140,0,0.3); color: #ff8c00; border: 1px solid #ff8c00; }
-        
-        .insight-box { 
-            background: rgba(139,64,73,0.2); 
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 12px; 
-            margin-bottom: 10px; 
-        }
-        .insight-icon { font-size: 24px; margin-bottom: 5px; }
-        .insight-text { font-size: 12px; line-height: 1.5; color: #e8e8e8; }
-        
-        .slider-container { margin: 8px 0; }
-        .slider-label { 
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 11px; 
-            margin-bottom: 4px;
-            color: #e8e8e8;
-        }
-        .slider { width: 100%; }
-        
-        .btn-row { display: flex; gap: 6px; }
-        .btn-row .btn { margin: 0; }
-        
-        .cal-day { 
-            aspect-ratio: 1; 
-            background: rgba(40,32,35,0.6); 
-            border: 1px solid #8b4049; 
-            border-radius: 6px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 10px; 
-            cursor: pointer; 
-            position: relative; 
-            padding: 3px 2px; 
-            color: #d4c5ba;
-        }
-        .cal-day.today { border: 2px solid #d4957d; }
-        .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,64,73,0.5), rgba(160,82,92,0.3)); }
-        .cal-day-num { font-weight: bold; }
-        .cal-client-name { font-size: 7px; color: #d4957d; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .cal-client-price { font-size: 7px; color: #9ac99a; font-weight: bold; }
-        
-        .booking-card { 
-            background: rgba(40,32,35,0.8); 
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 10px; 
-            margin-bottom: 8px; 
-        }
-        .booking-name { font-size: 13px; font-weight: bold; color: #d4957d; margin-bottom: 4px; }
-        .booking-info { font-size: 11px; color: #aaa; margin: 3px 0; }
-        .booking-badge { 
-            display: inline-block; 
-            font-size: 9px; 
-            padding: 2px 6px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            margin-right: 4px; 
-        }
-        .badge-new { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
-        .badge-return { background: rgba(100,149,237,0.3); color: #6495ed; border: 1px solid #6495ed; }
-        .badge-warsaw { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
-        .badge-sochaczew { background: rgba(255,140,0,0.3); color: #ff8c00; border: 1px solid #ff8c00; }
-        
-        .insight-box { 
-            background: rgba(139,64,73,0.2); 
-            border: 2px solid #8b4049; 
-            border-radius: 10px; 
-            padding: 12px; 
-            margin-bottom: 10px; 
-        }
-        .insight-icon { font-size: 24px; margin-bottom: 5px; }
-        .insight-text { font-size: 12px; line-height: 1.5; color: #d4c5ba; }
-        
-        .slider-container { margin: 8px 0; }
-        .slider-label { 
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 11px; 
-            margin-bottom: 4px; 
-        }
-        .slider { width: 100%; }
-        
-        .btn-row { display: flex; gap: 6px; }
-        .btn-row .btn { margin: 0; }
-    </style>
-</head>
-<body>
-    <div class="app">
-        <div class="header">
-            <div class="header-left">
-                <div class="avatar">😈</div>
+        html += `
+            <div class="cal-day ${isToday?'today':''} ${hasBooking?'has-booking':''}" onclick="calendarDayClick('${dateStr}')">
+                <div class="cal-day-num">${day}</div>
+                ${clientInfo}
+            </div>
+        `;
+    }
+    document.getElementById('calendar').innerHTML = html;
+    
+    const todayStr = now.toISOString().split('T')[0];
+    const upcoming = data.bookings.filter(b => !b.completed && b.date >= todayStr).sort((a,b) => new Date(a.date+' '+a.time) - new Date(b.date+' '+b.time));
+    const completed = data.bookings.filter(b => b.completed).sort((a,b) => new Date(b.completedAt) - new Date(a.completedAt)).slice(0,5);
+    
+    document.getElementById('upcomingBookings').innerHTML = upcoming.length>0 ? upcoming.map(b=>`
+        <div class="booking-card">
+            <div class="booking-name">${b.name}</div>
+            <div style="margin:5px 0;">
+                <span class="booking-badge badge-${b.type}">${b.type==='new'?'✨ Новый':'🔄 Постоянный'}</span>
+                <span class="booking-badge badge-${b.city}">${b.city==='warsaw'?'🏙️ Варшава':'🚗 Сохачев'}</span>
+            </div>
+            <div class="booking-info">📅 ${formatDate(b.date)} в ${b.time}</div>
+            ${b.price?`<div class="booking-info">💰 ${b.price} zł</div>`:''}
+            ${b.notes?`<div class="booking-info">📝 ${b.notes}</div>`:''}
+            <div class="btn-row" style="margin-top:8px;">
+                <button class="btn btn-small" style="background:#5a7a5a;" onclick="completeBooking(${b.id})">✓ Готово</button>
+                <button class="btn btn-small" style="background:#666;" onclick="editBooking(${b.id})">✏️</button>
+                <button class="btn btn-small" style="background:#c85050;" onclick="deleteBooking(${b.id})">✕</button>
+            </div>
+        </div>
+    `).join('') : '<div class="card">Нет предстоящих записей</div>';
+    
+    document.getElementById('completedBookings').innerHTML = completed.length>0 ? completed.map(b=>`
+        <div class="booking-card" style="opacity:0.7;">
+            <div class="booking-name">✓ ${b.name}</div>
+            <div class="booking-info">${formatDate(b.date)} • ${b.city==='warsaw'?'Варшава':'Сохачев'}</div>
+            ${b.price?`<div class="booking-info" style="color:#9ac99a;">+${b.price} zł</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Пока нет завершённых</div>';
+    
+    const stats = {
+        total: data.bookings.filter(b=>b.completed).length,
+        warsaw: data.bookings.filter(b=>b.completed && b.city==='warsaw').length,
+        sochaczew: data.bookings.filter(b=>b.completed && b.city==='sochaczew').length,
+        new: data.bookings.filter(b=>b.completed && b.type==='new').length
+    };
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-warsaw').textContent = stats.warsaw;
+    document.getElementById('stat-sochaczew').textContent = stats.sochaczew;
+    document.getElementById('stat-new').textContent = stats.new;
+}
+
+function renderDiary() {
+    const recent = data.diary.slice(-7).reverse();
+    document.getElementById('diaryHistory').innerHTML = recent.length>0 ? recent.map(e=>`
+        <div class="card">
+            <div class="card-title">${formatDate(e.date)}</div>
+            <div class="card-desc">😊 ${e.mood}/10 | ⚡ ${e.energy}/10 | 😰 ${e.anxiety}/10 ${e.steps?`| 👣 ${e.steps}`:''}</div>
+            ${e.achievements?`<div class="card-hint">✓ ${e.achievements}</div>`:''}
+            ${e.struggles?`<div class="card-hint">⚠️ ${e.struggles}</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Начни вести дневник</div>';
+}
+
+function renderAnxiety() {
+    const last7 = data.anxietyLogs.slice(-7).reverse();
+    document.getElementById('anxietyHistory').innerHTML = last7.length>0 ? last7.map(l=>`
+        <div class="card">
+            <div class="card-title">${formatDate(l.date)} ${l.time}</div>
+            <div class="card-desc">
+                📍 ${getLocationName(l.location)} • 
+                ${l.before}/10 ${l.after?`→ ${l.after}/10`:''} 
+                ${l.after && l.after<l.before?'✓ Лучше':''}
+            </div>
+            ${l.trigger?`<div class="card-hint">Триггер: ${l.trigger}</div>`:''}
+            ${l.thought?`<div class="card-hint">💭 "${l.thought}"</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Пока нет записей</div>';
+}
+
+function renderFinance() {
+    document.getElementById('balance').textContent = Math.round(data.balance);
+    
+    // Forecast
+    const avgIncome = calculateAvgIncome();
+    const avgExpense = calculateAvgExpense();
+    const monthly = avgIncome - avgExpense;
+    
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
+    const monthsToCushion = monthly>0 ? Math.ceil((cushion.goal - cushion.amount) / monthly) : '∞';
+    
+    document.getElementById('forecastBox').innerHTML = `
+        <div class="forecast-box">
+            <div class="forecast-title">📈 Прогноз</div>
+            <div class="forecast-item">
+                <span>Средний доход/мес:</span>
+                <span style="color:#9ac99a;">${Math.round(avgIncome)} zł</span>
+            </div>
+            <div class="forecast-item">
+                <span>Средний расход/мес:</span>
+                <span style="color:#c85050;">${Math.round(avgExpense)} zł</span>
+            </div>
+            <div class="forecast-item">
+                <span>Остаётся:</span>
+                <span style="color:${monthly>0?'#9ac99a':'#c85050'};">${monthly>0?'+':''}${Math.round(monthly)} zł</span>
+            </div>
+            <div class="forecast-item">
+                <span>Финподушка через:</span>
+                <span style="color:#d4957d;">${monthsToCushion} мес</span>
+            </div>
+        </div>
+    `;
+    
+    // Piggy banks
+    document.getElementById('piggyBanks').innerHTML = data.piggyBanks.map(b=>{
+        const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
+        return `
+            <div class="progress-box">
+                <div class="progress-header">
+                    <div class="progress-name">${b.name}</div>
+                    <div class="progress-amount">${Math.round(b.amount)} ${b.goal>0?`/ ${b.goal}`:''} zł</div>
+                </div>
+                ${b.goal>0?`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
+            </div>
+        `;
+    }).join('');
+    
+    // Transactions
+    const recent = data.transactions.slice(-10).reverse();
+    document.getElementById('transactionList').innerHTML = recent.length>0 ? recent.map(t=>`
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <div class="user-name">Антон</div>
-                    <div class="user-level">Уровень <span id="level">5</span></div>
+                    <div class="card-title">${t.type==='income'?'💰 Доход':'💸 '+getCategoryName(t.category)}</div>
+                    <div class="card-desc">${formatDateTime(t.date)}</div>
+                    ${t.description?`<div class="card-desc">${t.description}</div>`:''}
+                </div>
+                <div style="font-size:18px; font-weight:bold; color:${t.type==='income'?'#9ac99a':'#c85050'};">
+                    ${t.type==='income'?'+':'-'}${Math.round(t.amount)} zł
                 </div>
             </div>
-            <div class="header-stats">
-                <div class="stat-pill">⚡ <span id="xp">0</span></div>
-                <div class="stat-pill">🩸 <span id="blood">0</span></div>
+        </div>
+    `).join('') : '<div class="card">Пока нет транзакций</div>';
+    
+    // Quick achievements
+    const unlockedAch = data.achievements.filter(a=>a.unlocked).slice(0,3);
+    document.getElementById('achievementsQuick').innerHTML = unlockedAch.length>0 ? unlockedAch.map(a=>`
+        <div class="achievement">
+            <div class="achievement-icon">${a.icon}</div>
+            <div class="achievement-info">
+                <div class="achievement-name">${a.name} ✓</div>
+                <div class="achievement-desc">${a.desc}</div>
             </div>
         </div>
+    `).join('') : '<div class="card">Достижения появятся здесь</div>';
+}
+
+function renderSleep() {
+    const last7 = data.sleepLogs.slice(-7).reverse();
+    
+    // Insights
+    const insights = calculateSleepInsights();
+    document.getElementById('sleepInsights').innerHTML = insights.length>0 ? insights.map(i=>`
+        <div class="insight-box">
+            <div class="insight-icon">${i.icon}</div>
+            <div class="insight-text">${i.text}</div>
+        </div>
+    `).join('') : '<div class="card">Заполни 3+ дня для инсайтов</div>';
+    
+    // History
+    document.getElementById('sleepHistory').innerHTML = last7.length>0 ? last7.map(s=>{
+        const hours = s.hours.toFixed(1);
+        const quality = s.quality >= 7 ? 'good' : s.quality >= 4 ? 'ok' : 'bad';
+        const qualityText = s.quality >= 7 ? '😊 Хорошо' : s.quality >= 4 ? '😐 Норм' : '😞 Плохо';
         
-        <div class="content">
-            <!-- ГЛАВНАЯ -->
-            <div class="screen active" id="screen-home">
-                <div class="dashboard-grid">
-                    <div class="dash-card">
-                        <div class="dash-title">⚡ Прогресс</div>
-                        <div class="dash-content">
-                            <div style="font-size:11px; color:#888; margin-bottom:4px;">До уровня <span id="nextLevel">6</span></div>
-                            <div class="xp-bar">
-                                <div class="xp-fill" id="xpBar" style="width:0%"></div>
-                            </div>
-                            <div style="font-size:10px; color:#888;"><span id="xpCurrent">0</span> / <span id="xpNeeded">100</span> XP</div>
-                        </div>
-                    </div>
+        return `
+            <div class="sleep-entry">
+                <div class="sleep-date">${formatDate(s.date)}</div>
+                <div class="sleep-info">
+                    🌙 ${hours}ч сна • 
+                    <span class="sleep-quality quality-${quality}">${qualityText}</span>
+                    ${s.wakeups>0?` • 😵 ${s.wakeups} раз проснулся`:''}
                 </div>
-                
-                <div class="section">🎯 Квесты на Сегодня</div>
-                <div id="todayQuests"></div>
-                
-                <div class="section">💰 Финансы</div>
-                <div class="dash-card">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <div>
-                            <div style="font-size:10px; color:#888;">Баланс</div>
-                            <div style="font-size:20px; font-weight:bold; color:#9ac99a;"><span id="homeBalance">0</span> zł</div>
-                        </div>
-                        <div>
-                            <div style="font-size:10px; color:#888;">До подушки</div>
-                            <div style="font-size:16px; font-weight:bold; color:#d4957d;"><span id="homeToGoal">5000</span> zł</div>
-                        </div>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="homeCushionProgress" style="width:0%"></div>
-                    </div>
-                </div>
-                
-                <div class="section">📅 Записи на Неделе</div>
-                <div id="homeBookings"></div>
-                
-                <button class="btn" onclick="exportReport()" style="margin-top:15px;">📊 Экспорт для Клода</button>
+                ${s.issues?`<div class="card-hint">${s.issues}</div>`:''}
             </div>
-            
-            <!-- КВЕСТЫ -->
-            <div class="screen" id="screen-quests">
-                <div class="section">⏰ Каждые 4 часа</div>
-                <div id="quests-4h"></div>
-                <div class="section">📅 Ежедневные</div>
-                <div id="quests-daily"></div>
-                <div class="section">📆 Еженедельные</div>
-                <div id="quests-weekly"></div>
-            </div>
-            
-            <!-- КАЛЕНДАРЬ -->
-            <div class="screen" id="screen-calendar">
-                <div class="stat-grid" style="margin-bottom:12px;">
-                    <div class="stat"><div class="stat-label">Всего</div><div class="stat-value"><span id="stat-total">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Варшава</div><div class="stat-value"><span id="stat-warsaw">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Сохачев</div><div class="stat-value"><span id="stat-sochaczew">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Новых</div><div class="stat-value"><span id="stat-new">0</span></div></div>
-                </div>
-                <button class="btn" onclick="showAddBooking()">➕ Добавить Запись</button>
-                <div class="section">📅 Календарь</div>
-                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; text-align:center; font-size:9px; color:#888; font-weight:bold;">
-                    <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-                </div>
-                <div id="calendar" style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:12px;"></div>
-                <div class="section">📋 Предстоящие</div>
-                <div id="upcomingBookings"></div>
-                <div class="section">✅ Завершённые</div>
-                <div id="completedBookings"></div>
-            </div>
-            
-            <!-- ДНЕВНИК -->
-            <div class="screen" id="screen-diary">
-                <button class="btn" onclick="showDiaryForm()">📝 Записать День</button>
-                <div class="section">📖 История</div>
-                <div id="diaryHistory"></div>
-            </div>
-            
-            <!-- ТРЕВОГА SOS -->
-            <div class="screen" id="screen-anxiety">
-                <div class="section">🚨 Быстрая Помощь</div>
-                <div class="sos-grid">
-                    <div class="sos-btn" onclick="startSOS('breathing')">
-                        <div class="sos-icon">🌬️</div>
-                        <div class="sos-title">Дыхание 4-7-8</div>
-                        <div class="sos-time">1 минута</div>
-                    </div>
-                    <div class="sos-btn" onclick="startSOS('grounding')">
-                        <div class="sos-icon">🧊</div>
-                        <div class="sos-title">Заземление</div>
-                        <div class="sos-time">2 минуты</div>
-                    </div>
-                    <div class="sos-btn" onclick="startSOS('thoughts')">
-                        <div class="sos-icon">💭</div>
-                        <div class="sos-title">Ловушка Мыслей</div>
-                        <div class="sos-time">3 минуты</div>
-                    </div>
-                    <div class="sos-btn" onclick="showAnxietyLog()">
-                        <div class="sos-icon">📝</div>
-                        <div class="sos-title">Журнал</div>
-                        <div class="sos-time">Триггеры</div>
-                    </div>
-                </div>
-                
-                <div class="section">📊 История Тревоги</div>
-                <div id="anxietyHistory"></div>
-                
-                <div class="section">😴 Журнал Сна</div>
-                <button class="btn" onclick="showSleepLog()">📝 Записать Сон</button>
-                <div id="sleepInsights" style="margin-top:10px;"></div>
-                <div id="sleepHistory"></div>
-            </div>
-            
-            <!-- ФИНАНСЫ -->
-            <div class="screen" id="screen-finance">
-                <div class="dash-card" style="text-align:center; margin-bottom:12px;">
-                    <div style="font-size:11px; color:#888;">Баланс</div>
-                    <div style="font-size:28px; font-weight:bold; color:#9ac99a; margin:5px 0;"><span id="balance">0</span> zł</div>
-                    <div class="btn-row">
-                        <button class="btn" onclick="showAddIncome()">💰 Доход</button>
-                        <button class="btn" onclick="showAddExpense()">💸 Расход</button>
-                    </div>
-                </div>
-                
-                <div class="section">🎯 Прогноз</div>
-                <div id="forecastBox"></div>
-                
-                <div class="section">🏺 Копилки</div>
-                <div id="piggyBanks"></div>
-                
-                <div class="section">📊 Транзакции</div>
-                <div id="transactionList"></div>
-                
-                <div class="section">🏆 Достижения</div>
-                <div id="achievementsQuick"></div>
-            </div>
-        </div>
+        `;
+    }).join('') : '<div class="card">Начни отслеживать сон</div>';
+}
+
+function renderAchievements() {
+    checkAchievements();
+}
+
+// ===== QUEST SYSTEM =====
+function toggleQuest(id) {
+    const q = data.quests.find(x=>x.id===id);
+    if(!q) return;
+    
+    q.done = !q.done;
+    const today = new Date().toISOString().split('T')[0];
+    
+    if(q.done) {
+        data.blood += q.reward;
+        addXP(q.xp);
         
-        <div class="nav">
-            <button class="nav-btn active" data-tab="home" onclick="switchTab('home')">
-                <div class="nav-icon">🏠</div><div class="nav-label">Главная</div>
-            </button>
-            <button class="nav-btn" data-tab="quests" onclick="switchTab('quests')">
-                <div class="nav-icon">⚔️</div><div class="nav-label">Квесты</div>
-            </button>
-            <button class="nav-btn" data-tab="calendar" onclick="switchTab('calendar')">
-                <div class="nav-icon">📅</div><div class="nav-label">Записи</div>
-            </button>
-            <button class="nav-btn" data-tab="diary" onclick="switchTab('diary')">
-                <div class="nav-icon">📔</div><div class="nav-label">Дневник</div>
-            </button>
-            <button class="nav-btn" data-tab="finance" onclick="switchTab('finance')">
-                <div class="nav-icon">💰</div><div class="nav-label">Финансы</div>
-            </button>
-            <button class="nav-btn" data-tab="anxiety" onclick="switchTab('anxiety')">
-                <div class="nav-icon">😰</div><div class="nav-label">Тревога</div>
-            </button>
-        </div>
-    </div>
+        // Streak logic
+        if(q.lastDone) {
+            const lastDate = new Date(q.lastDone);
+            const todayDate = new Date(today);
+            const diffDays = Math.floor((todayDate - lastDate) / (1000*60*60*24));
+            
+            if(diffDays === 1) {
+                q.streak++;
+            } else if(diffDays > 1) {
+                q.streak = 1;
+            }
+        } else {
+            q.streak = 1;
+        }
+        q.lastDone = today;
+        
+        if(q.streak >= 7) {
+            alert(`🔥 STREAK 7 ДНЕЙ! ${q.title}! +${q.xp*2} BONUS XP!`);
+            addXP(q.xp);
+        }
+    } else {
+        data.blood = Math.max(0, data.blood - q.reward);
+    }
     
-    <!-- MODALS -->
-    <div class="modal" id="diaryFormModal">
-        <div class="modal-box">
-            <h3>📔 Дневник за Сегодня</h3>
-            <div class="slider-container">
-                <div class="slider-label">
-                    <span>Настроение:</span>
-                    <span id="diaryMoodVal">5</span>
+    save(); render();
+}
+
+// ===== ANXIETY SOS =====
+function startSOS(type) {
+    currentSOSType = type;
+    
+    const content = {
+        breathing: `
+            <div style="text-align:center; padding:20px;">
+                <p style="margin-bottom:15px;">Дыши по схеме:</p>
+                <div style="font-size:18px; line-height:2;">
+                    <div>Вдох носом: <b>4 секунды</b></div>
+                    <div>Задержка: <b>7 секунд</b></div>
+                    <div>Выдох ртом: <b>8 секунд</b></div>
                 </div>
-                <input type="range" class="slider" id="diaryMood" min="1" max="10" value="5" oninput="document.getElementById('diaryMoodVal').textContent=this.value">
+                <p style="margin-top:15px; color:#888; font-size:12px;">Повтори 4 раза</p>
             </div>
-            <div class="slider-container">
-                <div class="slider-label">
-                    <span>Энергия:</span>
-                    <span id="diaryEnergyVal">5</span>
-                </div>
-                <input type="range" class="slider" id="diaryEnergy" min="1" max="10" value="5" oninput="document.getElementById('diaryEnergyVal').textContent=this.value">
-            </div>
-            <div class="slider-container">
-                <div class="slider-label">
-                    <span>Тревога:</span>
-                    <span id="diaryAnxietyVal">5</span>
-                </div>
-                <input type="range" class="slider" id="diaryAnxiety" min="1" max="10" value="5" oninput="document.getElementById('diaryAnxietyVal').textContent=this.value">
-            </div>
-            <label>Шаги:</label>
-            <input type="number" id="diarySteps" placeholder="8500">
-            <label>Что сделал сегодня:</label>
-            <textarea id="diaryAchievements" rows="3" placeholder="Татуировка, контент..."></textarea>
-            <label>Что было сложно:</label>
-            <textarea id="diaryStruggles" rows="3" placeholder="Тревога, усталость..."></textarea>
-            <button class="btn" onclick="saveDiary()">💾 Сохранить (+20 🩸)</button>
-            <button class="btn modal-close" onclick="closeModal('diaryFormModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="bookingModal">
-        <div class="modal-box">
-            <h3 id="bookingModalTitle">📅 Новая Запись</h3>
-            <input type="hidden" id="bookingEditId">
-            <label>Дата:</label>
-            <input type="date" id="bookingDate">
-            <label>Время:</label>
-            <input type="time" id="bookingTime" value="12:00">
-            <label>Имя клиента:</label>
-            <input type="text" id="bookingName" placeholder="Анна Ковальская">
-            <label>Город:</label>
-            <select id="bookingCity">
-                <option value="warsaw">🏙️ Варшава</option>
-                <option value="sochaczew">🚗 Сохачев</option>
-            </select>
-            <label>Тип клиента:</label>
-            <select id="bookingType">
-                <option value="new">✨ Новый клиент</option>
-                <option value="return">🔄 Постоянный клиент</option>
-            </select>
-            <label>Примерная цена (zł):</label>
-            <input type="number" id="bookingPrice" placeholder="1200">
-            <label>Заметки:</label>
-            <textarea id="bookingNotes" rows="2" placeholder="Контакт, пожелания..."></textarea>
-            <button class="btn" onclick="saveBooking()">💾 Сохранить</button>
-            <button class="btn modal-close" onclick="closeModal('bookingModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="sleepModal">
-        <div class="modal-box">
-            <h3>😴 Журнал Сна</h3>
-            <label>Лёг спать:</label>
-            <input type="time" id="sleepBedTime" value="23:00">
-            <label>Проснулся:</label>
-            <input type="time" id="sleepWakeTime" value="07:00">
-            <div class="slider-container">
-                <div class="slider-label">
-                    <span>Качество сна:</span>
-                    <span id="sleepQualityVal">5</span>
-                </div>
-                <input type="range" class="slider" id="sleepQuality" min="1" max="10" value="5" oninput="document.getElementById('sleepQualityVal').textContent=this.value">
-            </div>
-            <label>Просыпался ночью (раз):</label>
-            <input type="number" id="sleepWakeups" value="0" min="0">
-            <label>Что мешало:</label>
-            <textarea id="sleepIssues" rows="2" placeholder="Тревога, шум..."></textarea>
-            <button class="btn" onclick="saveSleep()">💾 Сохранить (+15 🩸)</button>
-            <button class="btn modal-close" onclick="closeModal('sleepModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="anxietyModal">
-        <div class="modal-box">
-            <h3>📝 Журнал Тревоги</h3>
-            <div class="slider-container">
-                <div class="slider-label">
-                    <span>Уровень ДО:</span>
-                    <span id="anxietyBeforeVal">7</span>
-                </div>
-                <input type="range" class="slider" id="anxietyBefore" min="1" max="10" value="7" oninput="document.getElementById('anxietyBeforeVal').textContent=this.value">
-            </div>
-            <label>Что случилось (триггер):</label>
-            <textarea id="anxietyTrigger" rows="2" placeholder="Проверил счёт..."></textarea>
-            <label>Где был:</label>
-            <select id="anxietyLocation">
-                <option value="home">🏠 Дома</option>
-                <option value="warsaw">🏙️ Варшава</option>
-                <option value="sochaczew">🚗 Сохачев</option>
-                <option value="road">🛣️ В дороге</option>
-            </select>
-            <label>Автоматическая мысль:</label>
-            <textarea id="anxietyThought" rows="2" placeholder="'У меня не хватит денег...'"></textarea>
-            <button class="btn" onclick="saveAnxietyLog()">💾 Сохранить</button>
-            <button class="btn modal-close" onclick="closeModal('anxietyModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="sosModal">
-        <div class="modal-box">
-            <h3 id="sosTitle">🌬️ Техника</h3>
-            <div id="sosContent"></div>
-            <div class="slider-container" style="margin-top:15px;">
-                <div class="slider-label">
-                    <span>Уровень ПОСЛЕ:</span>
-                    <span id="anxietyAfterVal">5</span>
-                </div>
-                <input type="range" class="slider" id="anxietyAfter" min="1" max="10" value="5" oninput="document.getElementById('anxietyAfterVal').textContent=this.value">
-            </div>
-            <button class="btn" onclick="completeSOS()">✓ Готово (+10 🩸)</button>
-            <button class="btn modal-close" onclick="closeModal('sosModal')">Закрыть</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="incomeModal">
-        <div class="modal-box">
-            <h3>💰 Добавить Доход</h3>
-            <label>Чистая Сумма (zł):</label>
-            <input type="number" id="incomeAmount" placeholder="740">
-            <button class="btn" onclick="showDistribution()">→ Распределить</button>
-            <button class="btn modal-close" onclick="closeModal('incomeModal')">Отмена</button>
-        </div>
-    </div>
-    
-    <div class="modal" id="distributionModal">
-        <div class="modal-box">
-            <h3>🏺 Распредели по Копилкам</h3>
-            <div id="distributionList"></div>
-            <div style="margin-top:12px; padding:10px; background:rgba(139,64,73,0.2); border-radius:8px;">
-                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-                    <span>Распределено:</span>
-                    <span id="totalDistributed" style="color:#9ac99a; font-weight:bold;">0 zł</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:12px;">
-                    <span>Осталось:</span>
-                    <span id="remaining" style="color:#d4957d; font-weight:bold;">0 zł</span>
+        `,
+        grounding: `
+            <div style="padding:15px;">
+                <p style="margin-bottom:10px; font-weight:bold;">Назови вслух:</p>
+                <div style="line-height:1.8; font-size:13px;">
+                    <div>👁️ 5 вещей которые ВИДИШЬ</div>
+                    <div>👂 4 звука которые СЛЫШИШЬ</div>
+                    <div>🤚 3 вещи которые ТРОГАЕШЬ</div>
+                    <div>👃 2 запаха которые ЧУВСТВУЕШЬ</div>
+                    <div>👅 1 вкус во РТУ</div>
                 </div>
             </div>
-            <button class="btn" onclick="applyDistribution()">✓ Применить</button>
-            <button class="btn modal-close" onclick="closeModal('distributionModal')">Отмена</button>
-        </div>
-    </div>
+        `,
+        thoughts: `
+            <div style="padding:15px;">
+                <p style="margin-bottom:10px;">Запиши мысль которая крутится:</p>
+                <textarea id="thoughtCapture" style="width:100%; min-height:60px; padding:8px; background:rgba(40,32,35,0.6); border:2px solid #8b4049; border-radius:8px; color:#d4c5ba; font-family:'Courier New',monospace;"></textarea>
+                <p style="margin-top:10px; font-size:12px; color:#888;">Это скорее всего одно из:</p>
+                <div style="font-size:11px; line-height:1.6; margin-top:5px;">
+                    <div>• Катастрофизация ("Всё плохо")</div>
+                    <div>• Чтение мыслей ("Они думают...")</div>
+                    <div>• Чёрно-белое мышление</div>
+                    <div>• "Должен" вместо "хочу"</div>
+                </div>
+            </div>
+        `
+    };
     
-    <div class="modal" id="expenseModal">
-        <div class="modal-box">
-            <h3>💸 Добавить Расход</h3>
-            <label>Сумма (zł):</label>
-            <input type="number" id="expenseAmount" placeholder="150">
-            <label>Категория:</label>
-            <select id="expenseCategory">
-                <option value="rent">🏠 Аренда</option>
-                <option value="food">🍕 Еда</option>
-                <option value="transport">🚌 Дорога</option>
-                <option value="medicine">💊 Лекарства</option>
-                <option value="doctor">👨‍⚕️ Врач</option>
-                <option value="debt">📉 Долги</option>
-                <option value="education">📚 Обучение</option>
-                <option value="other">💳 Другое</option>
-            </select>
-            <label>Заметка:</label>
-            <input type="text" id="expenseNote" placeholder="На что потратил">
-            <button class="btn" onclick="addExpense()">💸 Записать</button>
-            <button class="btn modal-close" onclick="closeModal('expenseModal')">Закрыть</button>
-        </div>
-    </div>
+    const titles = {
+        breathing: '🌬️ Дыхание 4-7-8',
+        grounding: '🧊 Заземление 5-4-3-2-1',
+        thoughts: '💭 Ловушка Мыслей'
+    };
     
-    <script src="./demon-guide-v3.js"></script>
-</body>
-</html>
+    document.getElementById('sosTitle').textContent = titles[type];
+    document.getElementById('sosContent').innerHTML = content[type];
+    showModal('sosModal');
+}
+
+function completeSOS() {
+    const after = parseInt(document.getElementById('anxietyAfter').value);
+    
+    data.sosSessions.push({
+        type: currentSOSType,
+        date: new Date().toISOString(),
+        anxietyAfter: after
+    });
+    
+    data.blood += 10;
+    addXP(15);
+    
+    save(); render(); closeModal('sosModal');
+    alert('✓ Молодец! +10 🩸 +15 XP');
+}
+
+function showAnxietyLog() {
+    showModal('anxietyModal');
+}
+
+function saveAnxietyLog() {
+    const before = parseInt(document.getElementById('anxietyBefore').value);
+    const trigger = document.getElementById('anxietyTrigger').value;
+    const location = document.getElementById('anxietyLocation').value;
+    const thought = document.getElementById('anxietyThought').value;
+    
+    data.anxietyLogs.push({
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}),
+        before, trigger, location, thought
+    });
+    
+    data.blood += 5;
+    addXP(10);
+    
+    save(); render(); closeModal('anxietyModal');
+}
+
+// ===== SLEEP TRACKING =====
+function showSleepLog() {
+    showModal('sleepModal');
+}
+
+function saveSleep() {
+    const bedTime = document.getElementById('sleepBedTime').value;
+    const wakeTime = document.getElementById('sleepWakeTime').value;
+    const quality = parseInt(document.getElementById('sleepQuality').value);
+    const wakeups = parseInt(document.getElementById('sleepWakeups').value);
+    const issues = document.getElementById('sleepIssues').value;
+    
+    // Calculate hours
+    const bed = new Date('2000-01-01 ' + bedTime);
+    let wake = new Date('2000-01-01 ' + wakeTime);
+    if(wake < bed) wake = new Date('2000-01-02 ' + wakeTime);
+    const hours = (wake - bed) / (1000*60*60);
+    
+    data.sleepLogs.push({
+        date: new Date().toISOString().split('T')[0],
+        bedTime, wakeTime, hours, quality, wakeups, issues
+    });
+    
+    const reward = hours >= 7 ? 15 : 10;
+    const xpReward = hours >= 7 ? 25 : 15;
+    data.blood += reward;
+    addXP(xpReward);
+    
+    save(); render(); closeModal('sleepModal');
+    
+    if(hours >= 7) {
+        alert(`✓ Отлично! 7+ часов! +${reward} 🩸 +${xpReward} XP`);
+    }
+}
+
+function calculateSleepInsights() {
+    if(data.sleepLogs.length < 3) return [];
+    
+    const insights = [];
+    const recent = data.sleepLogs.slice(-7);
+    const avgHours = recent.reduce((s,l)=>s+l.hours,0) / recent.length;
+    
+    if(avgHours < 6.5) {
+        insights.push({
+            icon: '😴',
+            text: `Средний сон: ${avgHours.toFixed(1)}ч. Это мало! Цель: 7+ часов для энергии и меньшей тревоги.`
+        });
+    } else if(avgHours >= 7) {
+        insights.push({
+            icon: '✅',
+            text: `Отлично! Средний сон: ${avgHours.toFixed(1)}ч. Продолжай в том же духе!`
+        });
+    }
+    
+    // Correlations with anxiety
+    if(data.anxietyLogs.length >= 3) {
+        const anxietyDates = data.anxietyLogs.map(a=>a.date);
+        const sleepDates = recent.map(s=>s.date);
+        const poorSleepDays = recent.filter(s=>s.hours<6).map(s=>s.date);
+        
+        const anxietyAfterPoorSleep = anxietyDates.filter(d=>poorSleepDays.includes(d)).length;
+        if(anxietyAfterPoorSleep >= 2) {
+            insights.push({
+                icon: '🔗',
+                text: `Замечено: после плохого сна (<6ч) тревога выше. Связь сон→тревога подтверждена.`
+            });
+        }
+    }
+    
+    return insights;
+}
+
+// ===== FINANCE =====
+function calculateAvgIncome() {
+    const incomes = data.transactions.filter(t=>t.type==='income');
+    if(incomes.length === 0) return 0;
+    return incomes.reduce((s,t)=>s+t.amount,0) / Math.max(1, incomes.length/3);
+}
+
+function calculateAvgExpense() {
+    const expenses = data.transactions.filter(t=>t.type==='expense');
+    if(expenses.length === 0) return 0;
+    return expenses.reduce((s,t)=>s+t.amount,0) / Math.max(1, expenses.length/3);
+}
+
+function showAddIncome() { showModal('incomeModal'); }
+
+function showDistribution() {
+    const amount = parseFloat(document.getElementById('incomeAmount').value);
+    if(!amount || amount<=0) return alert('Введи сумму!');
+    
+    tempIncome = amount;
+    let remaining = amount;
+    
+    tempDistribution = {};
+    
+    const rent = data.piggyBanks.find(b=>b.id==='rent');
+    if(rent.amount < rent.goal) {
+        tempDistribution.rent = Math.min(rent.goal - rent.amount, Math.round(remaining * 0.3));
+        remaining -= tempDistribution.rent;
+    } else {
+        tempDistribution.rent = 0;
+    }
+    
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
+    if(cushion.amount < cushion.goal && remaining > 0) {
+        tempDistribution.cushion = Math.round(remaining * 0.4);
+        remaining -= tempDistribution.cushion;
+    } else {
+        tempDistribution.cushion = 0;
+    }
+    
+    if(remaining > 400) {
+        tempDistribution.debt = Math.min(700, Math.round(remaining * 0.3));
+        remaining -= tempDistribution.debt;
+    } else {
+        tempDistribution.debt = 0;
+    }
+    
+    const drawing = data.piggyBanks.find(b=>b.id==='drawing');
+    if(drawing.amount < drawing.goal && remaining > 0) {
+        tempDistribution.drawing = Math.round(remaining * 0.5);
+        remaining -= tempDistribution.drawing;
+    } else {
+        tempDistribution.drawing = 0;
+    }
+    
+    const teeth = data.piggyBanks.find(b=>b.id==='teeth');
+    if(remaining > 0 && teeth.amount < teeth.goal) {
+        tempDistribution.teeth = remaining;
+    } else {
+        tempDistribution.teeth = 0;
+    }
+    
+    document.getElementById('distributionList').innerHTML = data.piggyBanks.map(b=>`
+        <div style="background:rgba(40,32,35,0.6); border:2px solid #8b4049; border-radius:8px; padding:10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="color:#d4957d; font-size:12px; font-weight:bold;">${b.name}</div>
+            <input type="number" style="width:90px; text-align:right; background:rgba(40,32,35,0.6); border:2px solid #8b4049; border-radius:6px; padding:6px; color:#d4c5ba; font-family:'Courier New',monospace;" id="dist-${b.id}" value="${tempDistribution[b.id] || 0}" oninput="updateTotal()">
+        </div>
+    `).join('');
+    
+    updateTotal();
+    closeModal('incomeModal');
+    showModal('distributionModal');
+}
+
+function updateTotal() {
+    let total = 0;
+    data.piggyBanks.forEach(b => {
+        const val = parseFloat(document.getElementById(`dist-${b.id}`).value) || 0;
+        total += val;
+    });
+    document.getElementById('totalDistributed').textContent = Math.round(total) + ' zł';
+    document.getElementById('remaining').textContent = Math.round(tempIncome - total) + ' zł';
+}
+
+function applyDistribution() {
+    let total = 0;
+    data.piggyBanks.forEach(b => {
+        const val = parseFloat(document.getElementById(`dist-${b.id}`).value) || 0;
+        b.amount += val;
+        total += val;
+    });
+    
+    data.balance += tempIncome;
+    const incomeId = Date.now();
+    data.transactions.push({
+        id: incomeId,
+        type: 'income',
+        amount: tempIncome,
+        description: 'Доход',
+        date: new Date().toISOString()
+    });
+    
+    data.blood += 20;
+    addXP(30);
+    
+    save(); 
+    closeModal('distributionModal');
+    render(); 
+    document.getElementById('incomeAmount').value='';
+    alert(`✓ Доход ${Math.round(tempIncome)} zł добавлен! +20 🩸 +30 XP`);
+}
+
+function showAddExpense() { showModal('expenseModal'); }
+
+function addExpense() {
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    const category = document.getElementById('expenseCategory').value;
+    const note = document.getElementById('expenseNote').value;
+    if(!amount || amount<=0) return alert('Введи сумму!');
+    
+    data.balance -= amount;
+    const expenseId = Date.now();
+    data.transactions.push({
+        id: expenseId,
+        type: 'expense',
+        amount: amount,
+        category: category,
+        description: note,
+        date: new Date().toISOString()
+    });
+    
+    save(); render(); closeModal('expenseModal');
+    document.getElementById('expenseAmount').value='';
+    document.getElementById('expenseNote').value='';
+}
+
+// ===== ACHIEVEMENTS =====
+function checkAchievements() {
+    const cushion = data.piggyBanks.find(b=>b.id==='cushion');
+    
+    // First 1k
+    const ach1k = data.achievements.find(a=>a.id==='first_1k');
+    if(!ach1k.unlocked && cushion.amount >= 1000) {
+        ach1k.unlocked = true;
+        alert('🏆 ДОСТИЖЕНИЕ! Первая 1000 в подушке! +50 🩸 +80 XP');
+        data.blood += 50;
+        addXP(80);
+    }
+    
+    // 7 days sleep
+    if(data.sleepLogs.length >= 7) {
+        const last7 = data.sleepLogs.slice(-7);
+        const all7h = last7.every(s=>s.hours>=7);
+        const achSleep = data.achievements.find(a=>a.id==='sleep_7d');
+        if(!achSleep.unlocked && all7h) {
+            achSleep.unlocked = true;
+            alert('🏆 ДОСТИЖЕНИЕ! Неделя сна 7+ часов! +50 🩸 +80 XP');
+            data.blood += 50;
+            addXP(80);
+        }
+    }
+    
+    save();
+}
+
+// ===== EXPORT =====
+function exportReport() {
+    const report = {
+        export_date: new Date().toISOString(),
+        level: data.level,
+        xp: data.xp,
+        blood: data.blood,
+        balance: data.balance,
+        piggy_banks: data.piggyBanks.map(b=>({
+            name:b.name, 
+            amount:Math.round(b.amount), 
+            goal:b.goal,
+            progress: b.goal>0 ? Math.round(b.amount/b.goal*100) : 0
+        })),
+        quests: {
+            total: data.quests.length,
+            completed: data.quests.filter(q=>q.done).length,
+            streaks: data.quests.filter(q=>q.streak>0).map(q=>({
+                title:q.title, 
+                streak:q.streak
+            }))
+        },
+        anxiety: {
+            total_logs: data.anxietyLogs.length,
+            sos_sessions: data.sosSessions.length,
+            last_7: data.anxietyLogs.slice(-7)
+        },
+        sleep: {
+            total_logs: data.sleepLogs.length,
+            avg_hours: data.sleepLogs.length>0 ? 
+                (data.sleepLogs.reduce((s,l)=>s+l.hours,0)/data.sleepLogs.length).toFixed(1) : 0,
+            last_7: data.sleepLogs.slice(-7)
+        },
+        achievements: {
+            total: data.achievements.length,
+            unlocked: data.achievements.filter(a=>a.unlocked).length,
+            list: data.achievements.filter(a=>a.unlocked).map(a=>a.name)
+        },
+        bookings: data.bookings.filter(b=>b.completed).length
+    };
+    
+    const json = JSON.stringify(report, null, 2);
+    navigator.clipboard.writeText(json).then(()=>{
+        alert('📋 Отчет скопирован! Отправь Клоду для анализа.');
+    }).catch(()=>{
+        prompt('Скопируй отчет:', json);
+    });
+}
+
+// ===== UI HELPERS =====
+function switchTab(name) {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+name).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    
+    // Find and activate the correct nav button
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        if(btn.getAttribute('data-tab') === name) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function formatDateTime(dateStr) {
+    const d = new Date(dateStr);
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${d.getDate()} ${months[d.getMonth()]} ${hours}:${minutes}`;
+}
+
+function getCategoryName(cat) {
+    const names = {
+        rent:'Аренда', food:'Еда', transport:'Дорога', 
+        medicine:'Лекарства', doctor:'Врач', debt:'Долги', 
+        education:'Обучение', other:'Другое'
+    };
+    return names[cat] || 'Другое';
+}
+
+function getLocationName(loc) {
+    const names = {
+        home:'🏠 Дома', warsaw:'🏙️ Варшава', 
+        sochaczew:'🚗 Сохачев', road:'🛣️ В дороге'
+    };
+    return names[loc] || loc;
+}
+
+// ===== DIARY =====
+function showDiaryForm() { showModal('diaryFormModal'); }
+
+function saveDiary() {
+    const entry = {
+        date: new Date().toISOString().split('T')[0],
+        mood: document.getElementById('diaryMood').value,
+        energy: document.getElementById('diaryEnergy').value,
+        anxiety: document.getElementById('diaryAnxiety').value,
+        steps: document.getElementById('diarySteps').value,
+        achievements: document.getElementById('diaryAchievements').value,
+        struggles: document.getElementById('diaryStruggles').value,
+        timestamp: new Date().toISOString()
+    };
+    data.diary.push(entry);
+    data.blood += 20;
+    addXP(30);
+    save(); render(); closeModal('diaryFormModal');
+    document.getElementById('diarySteps').value='';
+    document.getElementById('diaryAchievements').value='';
+    document.getElementById('diaryStruggles').value='';
+    alert('✓ Дневник сохранён! +20 🩸 +30 XP');
+}
+
+// ===== CALENDAR / BOOKINGS =====
+function calendarDayClick(dateStr) {
+    const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
+    if(dayBookings.length > 0) {
+        // Show first booking for editing
+        editBooking(dayBookings[0].id);
+    } else {
+        // Create new booking for this date
+        document.getElementById('bookingEditId').value = '';
+        document.getElementById('bookingModalTitle').textContent = '📅 Новая Запись';
+        document.getElementById('bookingDate').value = dateStr;
+        document.getElementById('bookingTime').value = '12:00';
+        document.getElementById('bookingName').value = '';
+        document.getElementById('bookingCity').value = 'warsaw';
+        document.getElementById('bookingType').value = 'new';
+        document.getElementById('bookingPrice').value = '';
+        document.getElementById('bookingNotes').value = '';
+        showModal('bookingModal');
+    }
+}
+
+function showAddBooking() {
+    document.getElementById('bookingEditId').value = '';
+    document.getElementById('bookingModalTitle').textContent = '📅 Новая Запись';
+    document.getElementById('bookingDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('bookingTime').value = '12:00';
+    document.getElementById('bookingName').value = '';
+    document.getElementById('bookingCity').value = 'warsaw';
+    document.getElementById('bookingType').value = 'new';
+    document.getElementById('bookingPrice').value = '';
+    document.getElementById('bookingNotes').value = '';
+    showModal('bookingModal');
+}
+
+function editBooking(id) {
+    const b = data.bookings.find(x=>x.id===id);
+    if(!b) return;
+    
+    document.getElementById('bookingEditId').value = id;
+    document.getElementById('bookingModalTitle').textContent = '✏️ Изменить Запись';
+    document.getElementById('bookingDate').value = b.date;
+    document.getElementById('bookingTime').value = b.time;
+    document.getElementById('bookingName').value = b.name;
+    document.getElementById('bookingCity').value = b.city;
+    document.getElementById('bookingType').value = b.type;
+    document.getElementById('bookingPrice').value = b.price || '';
+    document.getElementById('bookingNotes').value = b.notes || '';
+    showModal('bookingModal');
+}
+
+function saveBooking() {
+    const editId = document.getElementById('bookingEditId').value;
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+    const name = document.getElementById('bookingName').value;
+    const city = document.getElementById('bookingCity').value;
+    const type = document.getElementById('bookingType').value;
+    const price = parseFloat(document.getElementById('bookingPrice').value) || 0;
+    const notes = document.getElementById('bookingNotes').value;
+    
+    if(!date || !name) return alert('Заполни дату и имя!');
+    
+    if(editId) {
+        // Edit existing
+        const b = data.bookings.find(x=>x.id==editId);
+        if(b) {
+            b.date = date;
+            b.time = time;
+            b.name = name;
+            b.city = city;
+            b.type = type;
+            b.price = price;
+            b.notes = notes;
+        }
+    } else {
+        // Create new
+        data.bookings.push({
+            id: Date.now(), date, time, name, city, type, price, notes,
+            completed: false, createdAt: new Date().toISOString()
+        });
+    }
+    
+    save(); render(); closeModal('bookingModal');
+}
+
+function completeBooking(id) {
+    const b = data.bookings.find(x=>x.id===id);
+    if(!b || b.completed) return;
+    
+    if(b.price && confirm(`Добавить доход ${b.price} zł?`)) {
+        document.getElementById('incomeAmount').value = b.price;
+        showDistribution();
+    }
+    
+    b.completed = true;
+    b.completedAt = new Date().toISOString();
+    data.blood += 30;
+    addXP(50);
+    save(); render();
+}
+
+function deleteBooking(id) {
+    if(!confirm('Удалить запись?')) return;
+    data.bookings = data.bookings.filter(b=>b.id!==id);
+    save(); render();
+}
+
+// ===== INIT =====
+window.onload = load;
