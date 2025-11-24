@@ -35,6 +35,12 @@ let data = {
     // Sleep tracking
     sleepLogs: [],
     
+    // Diary
+    diary: [],
+    
+    // Bookings/Calendar
+    bookings: [],
+    
     // Achievements
     achievements: [
         // Financial
@@ -102,11 +108,12 @@ function addXP(amount) {
 function render() {
     renderHome();
     renderQuests();
+    renderCalendar();
+    renderDiary();
     renderAnxiety();
     renderFinance();
     renderSleep();
     renderAchievements();
-    renderStats();
     
     // Update header
     document.getElementById('level').textContent = data.level;
@@ -183,6 +190,97 @@ function renderQuests() {
             </div>
         `).join('');
     });
+}
+
+function renderCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startDay = firstDay === 0 ? 6 : firstDay - 1;
+    
+    let html = '';
+    for(let i = 0; i < startDay; i++) html += '<div class="cal-day"></div>';
+    
+    for(let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
+        const hasBooking = dayBookings.length > 0;
+        const isToday = day === today;
+        
+        let clientInfo = '';
+        if(hasBooking && dayBookings[0]) {
+            const b = dayBookings[0];
+            const shortName = b.name.split(' ')[0];
+            clientInfo = `
+                <div class="cal-client-name">${shortName}</div>
+                ${b.price?`<div class="cal-client-price">${b.price}zł</div>`:''}
+            `;
+        }
+        
+        html += `
+            <div class="cal-day ${isToday?'today':''} ${hasBooking?'has-booking':''}" onclick="calendarDayClick('${dateStr}')">
+                <div class="cal-day-num">${day}</div>
+                ${clientInfo}
+            </div>
+        `;
+    }
+    document.getElementById('calendar').innerHTML = html;
+    
+    const todayStr = now.toISOString().split('T')[0];
+    const upcoming = data.bookings.filter(b => !b.completed && b.date >= todayStr).sort((a,b) => new Date(a.date+' '+a.time) - new Date(b.date+' '+b.time));
+    const completed = data.bookings.filter(b => b.completed).sort((a,b) => new Date(b.completedAt) - new Date(a.completedAt)).slice(0,5);
+    
+    document.getElementById('upcomingBookings').innerHTML = upcoming.length>0 ? upcoming.map(b=>`
+        <div class="booking-card">
+            <div class="booking-name">${b.name}</div>
+            <div style="margin:5px 0;">
+                <span class="booking-badge badge-${b.type}">${b.type==='new'?'✨ Новый':'🔄 Постоянный'}</span>
+                <span class="booking-badge badge-${b.city}">${b.city==='warsaw'?'🏙️ Варшава':'🚗 Сохачев'}</span>
+            </div>
+            <div class="booking-info">📅 ${formatDate(b.date)} в ${b.time}</div>
+            ${b.price?`<div class="booking-info">💰 ${b.price} zł</div>`:''}
+            ${b.notes?`<div class="booking-info">📝 ${b.notes}</div>`:''}
+            <div class="btn-row" style="margin-top:8px;">
+                <button class="btn btn-small" style="background:#5a7a5a;" onclick="completeBooking(${b.id})">✓ Готово</button>
+                <button class="btn btn-small" style="background:#c85050;" onclick="deleteBooking(${b.id})">✕</button>
+            </div>
+        </div>
+    `).join('') : '<div class="card">Нет предстоящих записей</div>';
+    
+    document.getElementById('completedBookings').innerHTML = completed.length>0 ? completed.map(b=>`
+        <div class="booking-card" style="opacity:0.7;">
+            <div class="booking-name">✓ ${b.name}</div>
+            <div class="booking-info">${formatDate(b.date)} • ${b.city==='warsaw'?'Варшава':'Сохачев'}</div>
+            ${b.price?`<div class="booking-info" style="color:#9ac99a;">+${b.price} zł</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Пока нет завершённых</div>';
+    
+    const stats = {
+        total: data.bookings.filter(b=>b.completed).length,
+        warsaw: data.bookings.filter(b=>b.completed && b.city==='warsaw').length,
+        sochaczew: data.bookings.filter(b=>b.completed && b.city==='sochaczew').length,
+        new: data.bookings.filter(b=>b.completed && b.type==='new').length
+    };
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-warsaw').textContent = stats.warsaw;
+    document.getElementById('stat-sochaczew').textContent = stats.sochaczew;
+    document.getElementById('stat-new').textContent = stats.new;
+}
+
+function renderDiary() {
+    const recent = data.diary.slice(-7).reverse();
+    document.getElementById('diaryHistory').innerHTML = recent.length>0 ? recent.map(e=>`
+        <div class="card">
+            <div class="card-title">${formatDate(e.date)}</div>
+            <div class="card-desc">😊 ${e.mood}/10 | ⚡ ${e.energy}/10 | 😰 ${e.anxiety}/10 ${e.steps?`| 👣 ${e.steps}`:''}</div>
+            ${e.achievements?`<div class="card-hint">✓ ${e.achievements}</div>`:''}
+            ${e.struggles?`<div class="card-hint">⚠️ ${e.struggles}</div>`:''}
+        </div>
+    `).join('') : '<div class="card">Начни вести дневник</div>';
 }
 
 function renderAnxiety() {
@@ -264,6 +362,18 @@ function renderFinance() {
             </div>
         </div>
     `).join('') : '<div class="card">Пока нет транзакций</div>';
+    
+    // Quick achievements
+    const unlockedAch = data.achievements.filter(a=>a.unlocked).slice(0,3);
+    document.getElementById('achievementsQuick').innerHTML = unlockedAch.length>0 ? unlockedAch.map(a=>`
+        <div class="achievement">
+            <div class="achievement-icon">${a.icon}</div>
+            <div class="achievement-info">
+                <div class="achievement-name">${a.name} ✓</div>
+                <div class="achievement-desc">${a.desc}</div>
+            </div>
+        </div>
+    `).join('') : '<div class="card">Достижения появятся здесь</div>';
 }
 
 function renderSleep() {
@@ -299,41 +409,7 @@ function renderSleep() {
 }
 
 function renderAchievements() {
-    ['finance','pro','health'].forEach(cat=>{
-        const achievements = data.achievements.filter(a=>a.category===cat);
-        const container = document.getElementById(`achievements${cat==='finance'?'Finance':cat==='pro'?'Pro':'Health'}`);
-        container.innerHTML = achievements.map(a=>`
-            <div class="achievement ${a.unlocked?'':'locked'}">
-                <div class="achievement-icon">${a.icon}</div>
-                <div class="achievement-info">
-                    <div class="achievement-name">${a.name} ${a.unlocked?'✓':''}</div>
-                    <div class="achievement-desc">${a.desc}</div>
-                </div>
-            </div>
-        `).join('');
-    });
-    
     checkAchievements();
-}
-
-function renderStats() {
-    document.getElementById('statLevel').textContent = data.level;
-    document.getElementById('statBlood').textContent = data.blood;
-    document.getElementById('statQuests').textContent = data.quests.filter(q=>q.done).length;
-    document.getElementById('statWork').textContent = data.bookings.filter(b=>b.completed).length;
-    
-    document.getElementById('statsProgress').innerHTML = data.piggyBanks.map(b=>{
-        const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
-        return `
-            <div class="progress-box">
-                <div class="progress-header">
-                    <div class="progress-name">${b.name}</div>
-                    <div class="progress-amount">${Math.round(b.amount)} ${b.goal>0?`/ ${b.goal}`:''} zł</div>
-                </div>
-                ${b.goal>0?`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`:''}
-            </div>
-        `;
-    }).join('');
 }
 
 // ===== QUEST SYSTEM =====
@@ -791,6 +867,90 @@ function getLocationName(loc) {
         sochaczew:'🚗 Сохачев', road:'🛣️ В дороге'
     };
     return names[loc] || loc;
+}
+
+// ===== DIARY =====
+function showDiaryForm() { showModal('diaryFormModal'); }
+
+function saveDiary() {
+    const entry = {
+        date: new Date().toISOString().split('T')[0],
+        mood: document.getElementById('diaryMood').value,
+        energy: document.getElementById('diaryEnergy').value,
+        anxiety: document.getElementById('diaryAnxiety').value,
+        steps: document.getElementById('diarySteps').value,
+        achievements: document.getElementById('diaryAchievements').value,
+        struggles: document.getElementById('diaryStruggles').value,
+        timestamp: new Date().toISOString()
+    };
+    data.diary.push(entry);
+    data.blood += 20;
+    addXP(30);
+    save(); render(); closeModal('diaryFormModal');
+    document.getElementById('diarySteps').value='';
+    document.getElementById('diaryAchievements').value='';
+    document.getElementById('diaryStruggles').value='';
+    alert('✓ Дневник сохранён! +20 🩸 +30 XP');
+}
+
+// ===== CALENDAR / BOOKINGS =====
+function calendarDayClick(dateStr) {
+    const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
+    if(dayBookings.length > 0) {
+        const info = dayBookings.map(b=>`${b.time} - ${b.name} (${b.city==='warsaw'?'Варшава':'Сохачев'}) ${b.price?b.price+'zł':''}`).join('\n');
+        alert(`📅 ${formatDate(dateStr)}\n\n${info}`);
+    } else {
+        document.getElementById('bookingDate').value = dateStr;
+        showModal('bookingModal');
+    }
+}
+
+function showAddBooking() {
+    document.getElementById('bookingDate').value = new Date().toISOString().split('T')[0];
+    showModal('bookingModal');
+}
+
+function addBooking() {
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+    const name = document.getElementById('bookingName').value;
+    const city = document.getElementById('bookingCity').value;
+    const type = document.getElementById('bookingType').value;
+    const price = parseFloat(document.getElementById('bookingPrice').value) || 0;
+    const notes = document.getElementById('bookingNotes').value;
+    
+    if(!date || !name) return alert('Заполни дату и имя!');
+    
+    data.bookings.push({
+        id: Date.now(), date, time, name, city, type, price, notes,
+        completed: false, createdAt: new Date().toISOString()
+    });
+    save(); render(); closeModal('bookingModal');
+    document.getElementById('bookingName').value='';
+    document.getElementById('bookingPrice').value='';
+    document.getElementById('bookingNotes').value='';
+}
+
+function completeBooking(id) {
+    const b = data.bookings.find(x=>x.id===id);
+    if(!b || b.completed) return;
+    
+    if(b.price && confirm(`Добавить доход ${b.price} zł?`)) {
+        document.getElementById('incomeAmount').value = b.price;
+        showDistribution();
+    }
+    
+    b.completed = true;
+    b.completedAt = new Date().toISOString();
+    data.blood += 30;
+    addXP(50);
+    save(); render();
+}
+
+function deleteBooking(id) {
+    if(!confirm('Удалить запись?')) return;
+    data.bookings = data.bookings.filter(b=>b.id!==id);
+    save(); render();
 }
 
 // ===== INIT =====

@@ -307,6 +307,49 @@
         .stat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
         .stat-value { font-size: 22px; font-weight: bold; color: #d4957d; }
         
+        .cal-day { 
+            aspect-ratio: 1; 
+            background: rgba(40,32,35,0.6); 
+            border: 1px solid #8b4049; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 10px; 
+            cursor: pointer; 
+            position: relative; 
+            padding: 3px 2px; 
+            color: #d4c5ba;
+        }
+        .cal-day.today { border: 2px solid #d4957d; }
+        .cal-day.has-booking { background: linear-gradient(135deg, rgba(139,64,73,0.5), rgba(160,82,92,0.3)); }
+        .cal-day-num { font-weight: bold; }
+        .cal-client-name { font-size: 7px; color: #d4957d; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .cal-client-price { font-size: 7px; color: #9ac99a; font-weight: bold; }
+        
+        .booking-card { 
+            background: rgba(40,32,35,0.8); 
+            border: 2px solid #8b4049; 
+            border-radius: 10px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+        }
+        .booking-name { font-size: 13px; font-weight: bold; color: #d4957d; margin-bottom: 4px; }
+        .booking-info { font-size: 11px; color: #aaa; margin: 3px 0; }
+        .booking-badge { 
+            display: inline-block; 
+            font-size: 9px; 
+            padding: 2px 6px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            margin-right: 4px; 
+        }
+        .badge-new { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
+        .badge-return { background: rgba(100,149,237,0.3); color: #6495ed; border: 1px solid #6495ed; }
+        .badge-warsaw { background: rgba(154,201,154,0.3); color: #9ac99a; border: 1px solid #9ac99a; }
+        .badge-sochaczew { background: rgba(255,140,0,0.3); color: #ff8c00; border: 1px solid #ff8c00; }
+        
         .insight-box { 
             background: rgba(139,64,73,0.2); 
             border: 2px solid #8b4049; 
@@ -315,7 +358,7 @@
             margin-bottom: 10px; 
         }
         .insight-icon { font-size: 24px; margin-bottom: 5px; }
-        .insight-text { font-size: 12px; line-height: 1.5; }
+        .insight-text { font-size: 12px; line-height: 1.5; color: #d4c5ba; }
         
         .slider-container { margin: 8px 0; }
         .slider-label { 
@@ -382,19 +425,10 @@
                     </div>
                 </div>
                 
-                <div class="section">📅 Записи</div>
+                <div class="section">📅 Записи на Неделе</div>
                 <div id="homeBookings"></div>
                 
-                <div class="section">😰 Тревога</div>
-                <div class="dash-card" onclick="switchTab('anxiety')">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="font-size:11px; color:#888;">Сегодня</div>
-                            <div style="font-size:18px; font-weight:bold;" id="homeAnxiety">-/10</div>
-                        </div>
-                        <div style="font-size:11px; color:#d4957d; cursor:pointer;">→ SOS Помощь</div>
-                    </div>
-                </div>
+                <button class="btn" onclick="exportReport()" style="margin-top:15px;">📊 Экспорт для Клода</button>
             </div>
             
             <!-- КВЕСТЫ -->
@@ -405,6 +439,33 @@
                 <div id="quests-daily"></div>
                 <div class="section">📆 Еженедельные</div>
                 <div id="quests-weekly"></div>
+            </div>
+            
+            <!-- КАЛЕНДАРЬ -->
+            <div class="screen" id="screen-calendar">
+                <div class="stat-grid" style="margin-bottom:12px;">
+                    <div class="stat"><div class="stat-label">Всего</div><div class="stat-value"><span id="stat-total">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Варшава</div><div class="stat-value"><span id="stat-warsaw">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Сохачев</div><div class="stat-value"><span id="stat-sochaczew">0</span></div></div>
+                    <div class="stat"><div class="stat-label">Новых</div><div class="stat-value"><span id="stat-new">0</span></div></div>
+                </div>
+                <button class="btn" onclick="showAddBooking()">➕ Добавить Запись</button>
+                <div class="section">📅 Календарь</div>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; text-align:center; font-size:9px; color:#888; font-weight:bold;">
+                    <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+                </div>
+                <div id="calendar" style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:12px;"></div>
+                <div class="section">📋 Предстоящие</div>
+                <div id="upcomingBookings"></div>
+                <div class="section">✅ Завершённые</div>
+                <div id="completedBookings"></div>
+            </div>
+            
+            <!-- ДНЕВНИК -->
+            <div class="screen" id="screen-diary">
+                <button class="btn" onclick="showDiaryForm()">📝 Записать День</button>
+                <div class="section">📖 История</div>
+                <div id="diaryHistory"></div>
             </div>
             
             <!-- ТРЕВОГА SOS -->
@@ -435,6 +496,11 @@
                 
                 <div class="section">📊 История Тревоги</div>
                 <div id="anxietyHistory"></div>
+                
+                <div class="section">😴 Журнал Сна</div>
+                <button class="btn" onclick="showSleepLog()">📝 Записать Сон</button>
+                <div id="sleepInsights" style="margin-top:10px;"></div>
+                <div id="sleepHistory"></div>
             </div>
             
             <!-- ФИНАНСЫ -->
@@ -456,42 +522,9 @@
                 
                 <div class="section">📊 Транзакции</div>
                 <div id="transactionList"></div>
-            </div>
-            
-            <!-- СОН -->
-            <div class="screen" id="screen-sleep">
-                <button class="btn" onclick="showSleepLog()">📝 Записать Сон</button>
                 
-                <div class="section">📊 Корреляции</div>
-                <div id="sleepInsights"></div>
-                
-                <div class="section">🌙 История</div>
-                <div id="sleepHistory"></div>
-            </div>
-            
-            <!-- ДОСТИЖЕНИЯ -->
-            <div class="screen" id="screen-achievements">
-                <div class="section">🏆 Финансовые</div>
-                <div id="achievementsFinance"></div>
-                <div class="section">🎨 Профессиональные</div>
-                <div id="achievementsPro"></div>
-                <div class="section">😴 Здоровье</div>
-                <div id="achievementsHealth"></div>
-            </div>
-            
-            <!-- СТАТИСТИКА -->
-            <div class="screen" id="screen-stats">
-                <div class="stat-grid">
-                    <div class="stat"><div class="stat-label">Уровень</div><div class="stat-value"><span id="statLevel">5</span></div></div>
-                    <div class="stat"><div class="stat-label">Кровь</div><div class="stat-value"><span id="statBlood">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Квесты</div><div class="stat-value"><span id="statQuests">0</span></div></div>
-                    <div class="stat"><div class="stat-label">Работ</div><div class="stat-value"><span id="statWork">0</span></div></div>
-                </div>
-                
-                <button class="btn" onclick="exportReport()">📊 Экспорт для Клода</button>
-                
-                <div class="section">📈 Прогресс</div>
-                <div id="statsProgress"></div>
+                <div class="section">🏆 Достижения</div>
+                <div id="achievementsQuick"></div>
             </div>
         </div>
         
@@ -502,22 +535,85 @@
             <button class="nav-btn" onclick="switchTab('quests')">
                 <div class="nav-icon">⚔️</div><div class="nav-label">Квесты</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('anxiety')">
-                <div class="nav-icon">😰</div><div class="nav-label">Тревога</div>
+            <button class="nav-btn" onclick="switchTab('calendar')">
+                <div class="nav-icon">📅</div><div class="nav-label">Записи</div>
+            </button>
+            <button class="nav-btn" onclick="switchTab('diary')">
+                <div class="nav-icon">📔</div><div class="nav-label">Дневник</div>
             </button>
             <button class="nav-btn" onclick="switchTab('finance')">
                 <div class="nav-icon">💰</div><div class="nav-label">Финансы</div>
             </button>
-            <button class="nav-btn" onclick="switchTab('sleep')">
-                <div class="nav-icon">😴</div><div class="nav-label">Сон</div>
-            </button>
-            <button class="nav-btn" onclick="switchTab('achievements')">
-                <div class="nav-icon">🏆</div><div class="nav-label">Награды</div>
+            <button class="nav-btn" onclick="switchTab('anxiety')">
+                <div class="nav-icon">😰</div><div class="nav-label">Тревога</div>
             </button>
         </div>
     </div>
     
     <!-- MODALS -->
+    <div class="modal" id="diaryFormModal">
+        <div class="modal-box">
+            <h3>📔 Дневник за Сегодня</h3>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Настроение:</span>
+                    <span id="diaryMoodVal">5</span>
+                </div>
+                <input type="range" class="slider" id="diaryMood" min="1" max="10" value="5" oninput="document.getElementById('diaryMoodVal').textContent=this.value">
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Энергия:</span>
+                    <span id="diaryEnergyVal">5</span>
+                </div>
+                <input type="range" class="slider" id="diaryEnergy" min="1" max="10" value="5" oninput="document.getElementById('diaryEnergyVal').textContent=this.value">
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Тревога:</span>
+                    <span id="diaryAnxietyVal">5</span>
+                </div>
+                <input type="range" class="slider" id="diaryAnxiety" min="1" max="10" value="5" oninput="document.getElementById('diaryAnxietyVal').textContent=this.value">
+            </div>
+            <label>Шаги:</label>
+            <input type="number" id="diarySteps" placeholder="8500">
+            <label>Что сделал сегодня:</label>
+            <textarea id="diaryAchievements" rows="3" placeholder="Татуировка, контент..."></textarea>
+            <label>Что было сложно:</label>
+            <textarea id="diaryStruggles" rows="3" placeholder="Тревога, усталость..."></textarea>
+            <button class="btn" onclick="saveDiary()">💾 Сохранить (+20 🩸)</button>
+            <button class="btn modal-close" onclick="closeModal('diaryFormModal')">Закрыть</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="bookingModal">
+        <div class="modal-box">
+            <h3>📅 Новая Запись</h3>
+            <label>Дата:</label>
+            <input type="date" id="bookingDate">
+            <label>Время:</label>
+            <input type="time" id="bookingTime" value="12:00">
+            <label>Имя клиента:</label>
+            <input type="text" id="bookingName" placeholder="Анна Ковальская">
+            <label>Город:</label>
+            <select id="bookingCity">
+                <option value="warsaw">🏙️ Варшава</option>
+                <option value="sochaczew">🚗 Сохачев</option>
+            </select>
+            <label>Тип клиента:</label>
+            <select id="bookingType">
+                <option value="new">✨ Новый клиент</option>
+                <option value="return">🔄 Постоянный клиент</option>
+            </select>
+            <label>Примерная цена (zł):</label>
+            <input type="number" id="bookingPrice" placeholder="1200">
+            <label>Заметки:</label>
+            <textarea id="bookingNotes" rows="2" placeholder="Контакт, пожелания..."></textarea>
+            <button class="btn" onclick="addBooking()">📅 Добавить</button>
+            <button class="btn modal-close" onclick="closeModal('bookingModal')">Закрыть</button>
+        </div>
+    </div>
+    
     <div class="modal" id="sleepModal">
         <div class="modal-box">
             <h3>😴 Журнал Сна</h3>
