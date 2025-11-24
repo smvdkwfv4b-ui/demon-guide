@@ -92,11 +92,28 @@ function load() {
             console.error('Load failed, using defaults'); 
         }
     }
+    
+    // Log for debugging
+    console.log('Data loaded:', {
+        quests: data.quests.length,
+        piggyBanks: data.piggyBanks.length,
+        balance: data.balance,
+        transactions: data.transactions.length
+    });
+    
     render();
 }
 
 function save() {
     localStorage.setItem('demonDataV3', JSON.stringify(data));
+}
+
+// RESET function for debugging
+function resetData() {
+    if(confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные! Продолжить?')) {
+        localStorage.removeItem('demonDataV3');
+        location.reload();
+    }
 }
 
 // ===== XP & LEVEL SYSTEM =====
@@ -118,19 +135,46 @@ function addXP(amount) {
 
 // ===== RENDER =====
 function render() {
+    console.log('=== MAIN RENDER START ===');
+    console.log('Data state:', {
+        level: data.level,
+        xp: data.xp,
+        blood: data.blood,
+        quests: data.quests ? data.quests.length : 0,
+        piggyBanks: data.piggyBanks ? data.piggyBanks.length : 0,
+        balance: data.balance
+    });
+    
     renderHome();
+    console.log('✓ Home rendered');
+    
     renderQuests();
+    console.log('✓ Quests rendered');
+    
     renderCalendar();
+    console.log('✓ Calendar rendered');
+    
     renderDiary();
+    console.log('✓ Diary rendered');
+    
     renderAnxiety();
+    console.log('✓ Anxiety rendered');
+    
     renderFinance();
+    console.log('✓ Finance rendered');
+    
     renderSleep();
+    console.log('✓ Sleep rendered');
+    
     renderAchievements();
+    console.log('✓ Achievements rendered');
     
     // Update header
     document.getElementById('level').textContent = data.level;
     document.getElementById('xp').textContent = data.xp;
     document.getElementById('blood').textContent = data.blood;
+    
+    console.log('=== MAIN RENDER END ===');
 }
 
 function renderHome() {
@@ -183,25 +227,37 @@ function renderHome() {
 }
 
 function renderQuests() {
+    console.log('=== RENDER QUESTS START ===');
+    console.log('Total quests in data:', data.quests.length);
+    
     const periods = {
         '4h': 'quests-4h',
         'daily': 'quests-daily', 
         'weekly': 'quests-weekly'
     };
     
-    console.log('Rendering quests, total:', data.quests.length);
-    
     Object.keys(periods).forEach(p => {
-        const container = document.getElementById(periods[p]);
+        const containerId = periods[p];
+        const container = document.getElementById(containerId);
+        
+        console.log(`Looking for container: ${containerId}`);
+        
         if(!container) {
-            console.log('Container not found:', periods[p]);
+            console.error(`❌ Container NOT FOUND: ${containerId}`);
             return;
         }
         
-        const qs = data.quests.filter(q=>q.period===p);
-        console.log(`Period ${p}: ${qs.length} quests`);
+        console.log(`✅ Container found: ${containerId}`);
         
-        container.innerHTML = qs.length > 0 ? qs.map(q=>`
+        const qs = data.quests.filter(q=>q.period===p);
+        console.log(`Period ${p}: ${qs.length} quests found`);
+        
+        if(qs.length === 0) {
+            container.innerHTML = '<div class="card">Нет квестов в этой категории</div>';
+            return;
+        }
+        
+        const html = qs.map(q=>`
             <div class="card">
                 <div class="quest-row">
                     <div class="checkbox ${q.done?'done':''}" onclick="toggleQuest(${q.id})"></div>
@@ -216,8 +272,13 @@ function renderQuests() {
                     </div>
                 </div>
             </div>
-        `).join('') : '<div class="card">Нет квестов в этой категории</div>';
+        `).join('');
+        
+        console.log(`Setting HTML for ${containerId}, length: ${html.length}`);
+        container.innerHTML = html;
     });
+    
+    console.log('=== RENDER QUESTS END ===');
 }
 
 function renderCalendar() {
