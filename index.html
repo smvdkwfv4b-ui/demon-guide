@@ -519,7 +519,14 @@
                     <div class="stat"><div class="stat-label">Новых</div><div class="stat-value"><span id="stat-new">0</span></div></div>
                 </div>
                 <button class="btn" onclick="showAddBooking()">➕ Добавить Запись</button>
+                
                 <div class="section">📅 Календарь</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#2a2a2a; padding:10px; border-radius:10px;">
+                    <button class="btn btn-small" style="width:auto; padding:8px 15px; margin:0;" onclick="changeMonth(-1)">◀</button>
+                    <div style="font-size:14px; font-weight:bold; color:#e8b896;" id="currentMonth">Ноябрь 2024</div>
+                    <button class="btn btn-small" style="width:auto; padding:8px 15px; margin:0;" onclick="changeMonth(1)">▶</button>
+                </div>
+                
                 <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; text-align:center; font-size:9px; color:#888; font-weight:bold;">
                     <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
                 </div>
@@ -801,6 +808,6 @@
         </div>
     </div>
     
-    <script src="./app.js?v=3"></script>
+    <script src="./app.js?v=5"></script>
 </body>
 </html>

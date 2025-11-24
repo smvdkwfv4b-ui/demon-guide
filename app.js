@@ -69,6 +69,8 @@ let data = {
 let tempIncome = 0;
 let tempDistribution = {};
 let currentSOSType = '';
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth(); // 0-11
 
 // ===== INIT =====
 function load() {
@@ -76,9 +78,19 @@ function load() {
     if (saved) {
         try { 
             const loaded = JSON.parse(saved);
-            data = {...data, ...loaded};
+            // Merge with defaults to ensure all fields exist
+            data = {
+                ...data,
+                ...loaded,
+                // Ensure arrays exist
+                quests: loaded.quests && loaded.quests.length > 0 ? loaded.quests : data.quests,
+                piggyBanks: loaded.piggyBanks && loaded.piggyBanks.length > 0 ? loaded.piggyBanks : data.piggyBanks,
+                achievements: loaded.achievements && loaded.achievements.length > 0 ? loaded.achievements : data.achievements
+            };
         }
-        catch(e) { console.error('Load failed'); }
+        catch(e) { 
+            console.error('Load failed, using defaults'); 
+        }
     }
     render();
 }
@@ -177,11 +189,18 @@ function renderQuests() {
         'weekly': 'quests-weekly'
     };
     
+    console.log('Rendering quests, total:', data.quests.length);
+    
     Object.keys(periods).forEach(p => {
         const container = document.getElementById(periods[p]);
-        if(!container) return;
+        if(!container) {
+            console.log('Container not found:', periods[p]);
+            return;
+        }
         
         const qs = data.quests.filter(q=>q.period===p);
+        console.log(`Period ${p}: ${qs.length} quests`);
+        
         container.innerHTML = qs.length > 0 ? qs.map(q=>`
             <div class="card">
                 <div class="quest-row">
@@ -202,10 +221,15 @@ function renderQuests() {
 }
 
 function renderCalendar() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const today = now.getDate();
+    const year = calendarYear;
+    const month = calendarMonth;
+    const today = new Date();
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+    const currentDay = isCurrentMonth ? today.getDate() : -1;
+    
+    // Update month display
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
     
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -218,7 +242,7 @@ function renderCalendar() {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const dayBookings = data.bookings.filter(b => b.date === dateStr && !b.completed);
         const hasBooking = dayBookings.length > 0;
-        const isToday = day === today;
+        const isToday = day === currentDay;
         
         let clientInfo = '';
         if(hasBooking && dayBookings[0]) {
@@ -239,7 +263,7 @@ function renderCalendar() {
     }
     document.getElementById('calendar').innerHTML = html;
     
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
     const upcoming = data.bookings.filter(b => !b.completed && b.date >= todayStr).sort((a,b) => new Date(a.date+' '+a.time) - new Date(b.date+' '+b.time));
     const completed = data.bookings.filter(b => b.completed).sort((a,b) => new Date(b.completedAt) - new Date(a.completedAt)).slice(0,5);
     
@@ -281,6 +305,18 @@ function renderCalendar() {
     document.getElementById('stat-new').textContent = stats.new;
 }
 
+function changeMonth(delta) {
+    calendarMonth += delta;
+    if(calendarMonth > 11) {
+        calendarMonth = 0;
+        calendarYear++;
+    } else if(calendarMonth < 0) {
+        calendarMonth = 11;
+        calendarYear--;
+    }
+    renderCalendar();
+}
+
 function renderDiary() {
     const recent = data.diary.slice(-7).reverse();
     document.getElementById('diaryHistory').innerHTML = recent.length>0 ? recent.map(e=>`
@@ -310,6 +346,10 @@ function renderAnxiety() {
 }
 
 function renderFinance() {
+    console.log('Rendering finance, balance:', data.balance);
+    console.log('Piggy banks:', data.piggyBanks.length);
+    console.log('Transactions:', data.transactions.length);
+    
     document.getElementById('balance').textContent = Math.round(data.balance);
     
     // Forecast
@@ -337,13 +377,13 @@ function renderFinance() {
             </div>
             <div class="forecast-item">
                 <span>Финподушка через:</span>
-                <span style="color:#d4957d;">${monthsToCushion} мес</span>
+                <span style="color:#e8b896;">${monthsToCushion} мес</span>
             </div>
         </div>
     `;
     
     // Piggy banks
-    document.getElementById('piggyBanks').innerHTML = data.piggyBanks.map(b=>{
+    const piggyBanksHtml = data.piggyBanks.map(b=>{
         const pct = b.goal>0 ? Math.min(100, (b.amount/b.goal*100)).toFixed(0) : 0;
         return `
             <div class="progress-box">
@@ -356,18 +396,24 @@ function renderFinance() {
         `;
     }).join('');
     
+    document.getElementById('piggyBanks').innerHTML = piggyBanksHtml;
+    console.log('Piggy banks HTML generated');
+    
     // Transactions
     const recent = data.transactions.slice(-10).reverse();
     document.getElementById('transactionList').innerHTML = recent.length>0 ? recent.map(t=>`
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div style="flex:1;">
                     <div class="card-title">${t.type==='income'?'💰 Доход':'💸 '+getCategoryName(t.category)}</div>
                     <div class="card-desc">${formatDateTime(t.date)}</div>
                     ${t.description?`<div class="card-desc">${t.description}</div>`:''}
+                    <div style="font-size:18px; font-weight:bold; color:${t.type==='income'?'#9ac99a':'#c85050'}; margin-top:5px;">
+                        ${t.type==='income'?'+':'-'}${Math.round(t.amount)} zł
+                    </div>
                 </div>
-                <div style="font-size:18px; font-weight:bold; color:${t.type==='income'?'#9ac99a':'#c85050'};">
-                    ${t.type==='income'?'+':'-'}${Math.round(t.amount)} zł
+                <div style="display:flex; gap:5px;">
+                    <button class="btn btn-small" style="width:auto; padding:5px 10px; margin:0; background:#c85050;" onclick="deleteTransaction(${t.id})">✕</button>
                 </div>
             </div>
         </div>
@@ -384,6 +430,8 @@ function renderFinance() {
             </div>
         </div>
     `).join('') : '<div class="card">Достижения появятся здесь</div>';
+    
+    console.log('Finance rendering complete');
 }
 
 function renderSleep() {
@@ -759,6 +807,25 @@ function addExpense() {
     save(); render(); closeModal('expenseModal');
     document.getElementById('expenseAmount').value='';
     document.getElementById('expenseNote').value='';
+}
+
+function deleteTransaction(id) {
+    const t = data.transactions.find(x=>x.id===id);
+    if(!t) return;
+    
+    if(!confirm(`Удалить транзакцию ${t.type==='income'?'+':'-'}${Math.round(t.amount)} zł?`)) return;
+    
+    // Reverse the balance change
+    if(t.type === 'income') {
+        data.balance -= t.amount;
+        // Also reverse piggy bank allocations if this was an income
+        // (this is complex, so for now just adjust balance)
+    } else {
+        data.balance += t.amount;
+    }
+    
+    data.transactions = data.transactions.filter(x=>x.id!==id);
+    save(); render();
 }
 
 // ===== ACHIEVEMENTS =====
